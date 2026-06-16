@@ -22,6 +22,21 @@ function openBatch(id, name) {
     setTimeout(() => showPreloader(false), 5000);
 }
 
+// --- MISSION JEET PORTAL (Invisible Redirect) ---
+function openMissionJeet() {
+    const targetUrl = `https://eduvibe-mj.pages.dev/`;
+    const container = document.getElementById('iframeContainer');
+    const iframe = document.getElementById('studyIframe');
+    
+    container.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    showPreloader(true);
+    
+    iframe.src = targetUrl;
+    iframe.onload = () => showPreloader(false);
+    setTimeout(() => showPreloader(false), 5000);
+}
+
 function closeIframe() {
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
@@ -40,7 +55,6 @@ function toggleFav(id) {
     localStorage.setItem('fav-batches', JSON.stringify(favorites));
     renderBatchGrid();
     
-    // Pulse animation for feedback
     const btn = document.getElementById('favToggleBtn');
     btn.classList.add('scale-110');
     setTimeout(() => btn.classList.remove('scale-110'), 200);
