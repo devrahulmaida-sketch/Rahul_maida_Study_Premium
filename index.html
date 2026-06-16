@@ -49,7 +49,6 @@
             --card-border:#27272a;
             color: #ffffff !important;
         }
-        .dark-mode body { color: #ffffff !important; }
 
         #appHeader {
             height: var(--header-height);
@@ -65,44 +64,42 @@
             backdrop-filter: blur(12px);
         }
         .header-logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color) !important; }
-        .header-title { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.4px; cursor: pointer; }
+        .header-title { font-size: 1rem; font-weight: 800; letter-spacing: -0.4px; cursor: pointer; text-transform: uppercase; }
         .header-title span { color: var(--primary-color); }
 
         .header-btn {
-            width: 38px; height: 38px; border-radius: 10px;
+            width: 38px; height: 38px; border-radius: 12px;
             background-color: var(--bg-secondary); color: inherit;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s ease;
         }
 
-        main { padding: 1.5rem; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 4.5rem); }
+        main { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
 
         .card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 1.25rem; overflow: hidden; transition: transform 0.2s ease, border-color 0.2s;
+            border-radius: 1.25rem; overflow: hidden; transition: 0.2s ease;
             cursor: pointer; position: relative; display: flex; flex-direction: column;
         }
         .card:hover { transform: translateY(-4px); border-color: var(--primary-color); }
         .card-img-wrap { width: 100%; height: 160px; background: var(--bg-secondary); overflow: hidden; }
-        .card-img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s; }
-        .card:hover .card-img { transform: scale(1.05); }
+        .card-img { width: 100%; height: 100%; object-fit: contain; }
         .card-content { padding: 1rem; flex-grow: 1; }
-        .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; height: 2.8rem; }
+        .card-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; height: 2.6rem; }
         
         .action-btn {
             width: 100%; padding: 0.6rem; background: var(--primary-color);
             color: white; text-align: center; border-radius: 0.75rem;
-            font-weight: 700; font-size: 0.8rem; transition: background 0.2s;
+            font-weight: 700; font-size: 0.75rem;
         }
-        .action-btn:hover { background: var(--primary-hover); }
 
-        .live-badge { position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; animation: pulse 2s infinite; z-index: 10; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .live-badge { position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; animation: pulse 2s infinite; z-index: 10; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         
         .video-modal { position: fixed; inset: 0; background: black; z-index: 500; display: none; flex-direction: column; }
         .video-modal.active { display: flex; }
-        #videoPlayer { width: 100%; height: 100%; max-height: 75vh; background: #000; }
+        #videoPlayer { width: 100%; height: 100%; max-height: 80vh; background: #000; }
 
         .theme-modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
@@ -113,12 +110,12 @@
         
         #globalPreloader { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
         
-        .chapter-card { background: var(--bg-secondary); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; margin-bottom: 0.75rem; cursor: pointer; transition: 0.2s; }
-        .chapter-card:hover { border-color: var(--primary-color); background: rgba(90, 75, 218, 0.05); }
+        .chapter-row { background: var(--bg-secondary); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .chapter-row:hover { border-color: var(--primary-color); }
 
         @media (max-width: 768px) {
             #appHeader { padding: 0 12px; }
-            .header-title { font-size: 0.85rem; }
+            .header-title { font-size: 0.8rem; }
             main { padding: 1rem; }
         }
     </style>
@@ -126,36 +123,34 @@
 <body class="dark-mode">
     <div id="videoModal" class="video-modal">
         <div class="flex justify-between items-center p-4 border-b border-white/10">
-            <h3 id="videoTitle" class="text-white font-bold truncate pr-4 text-sm uppercase tracking-widest">Video Player</h3>
+            <h3 id="videoTitle" class="text-white font-bold truncate pr-4 text-xs uppercase tracking-widest">Video Player</h3>
             <button onclick="closeVideo()" class="text-white text-2xl">✕</button>
         </div>
         <div class="flex-grow flex items-center justify-center relative">
-            <video id="videoPlayer" controls playsinline poster="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg"></video>
+            <video id="videoPlayer" controls playsinline></video>
             <div id="videoLoader" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden"><div class="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>
         </div>
     </div>
 
     <div id="globalPreloader">
-        <div class="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+        <div class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
     </div>
 
     <header id="appHeader">
         <div class="flex items-center gap-2">
             <button id="backBtn" class="header-btn hidden" onclick="goBack()"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></button>
             <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="header-logo-img" alt="Logo">
-            <div class="header-title" id="pageTitle" onclick="location.href='/'">RAHUL MAIDA<span> STUDY PREMIUM</span></div>
+            <div class="header-title" id="pageTitle" onclick="location.href='/'">RAHUL<span> PREMIUM</span></div>
         </div>
         <div class="flex items-center gap-2">
-            <button id="favToggleBtn" class="header-btn" title="My Batches"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
+            <button id="favToggleBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
             <button id="themeBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg></button>
             <button id="searchBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
         </div>
     </header>
 
-    <main>
-        <div id="mainContent">
-            <div id="batchGrid" class="grid"></div>
-        </div>
+    <main id="mainContent">
+        <div id="batchGrid" class="grid"></div>
     </main>
 
     <!-- Modals -->
@@ -163,8 +158,8 @@
         <div class="theme-modal-container max-w-lg p-0 overflow-hidden">
             <div id="notifImageContainer" class="w-full h-48 bg-gray-800 hidden"><img id="notifFullImage" class="w-full h-full object-cover"></div>
             <div class="p-6">
-                <div class="flex justify-between items-start mb-2"><div><span class="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter" id="notifBatchLabel">Batch Name</span><h2 class="text-xl font-extrabold" id="notifHeading">Important Update</h2></div><button onclick="document.getElementById('announcementModal').classList.remove('active')" class="text-gray-500 hover:text-white">✕</button></div>
-                <p id="notifFullText" class="text-sm text-gray-400 leading-relaxed mb-6">Announcement content...</p>
+                <div class="flex justify-between items-start mb-2"><div><span class="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter" id="notifBatchLabel">Batch Update</span><h2 class="text-lg font-extrabold" id="notifHeading">Update</h2></div><button onclick="document.getElementById('announcementModal').classList.remove('active')" class="text-gray-500">✕</button></div>
+                <p id="notifFullText" class="text-xs text-gray-400 leading-relaxed mb-6">Content...</p>
                 <button onclick="document.getElementById('announcementModal').classList.remove('active')" class="action-btn">GOT IT</button>
             </div>
         </div>
@@ -172,16 +167,15 @@
 
     <div id="historyModal" class="theme-modal-overlay">
         <div class="theme-modal-container max-w-xl">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold">Recent Notices</h3><button onclick="document.getElementById('historyModal').classList.remove('active')" class="text-gray-400 text-2xl">✕</button></div>
-            <div id="historyContent" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+            <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold">Recent Notices</h3><button onclick="document.getElementById('historyModal').classList.remove('active')" class="text-gray-400">✕</button></div>
+            <div id="historyContent" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
         </div>
     </div>
 
     <div id="themeModal" class="theme-modal-overlay">
         <div class="theme-modal-container">
-            <h3 class="text-lg font-bold mb-4">Appearance</h3>
+            <h3 class="text-lg font-bold mb-4 text-center">Appearance</h3>
             <div class="theme-grid flex gap-4"><div class="theme-card flex-1 bg-gray-100 text-black rounded-xl p-4 cursor-pointer text-center font-bold" data-theme="light">Light</div><div class="theme-card flex-1 bg-gray-900 text-white rounded-xl p-4 cursor-pointer text-center font-bold" data-theme="dark">Dark</div></div>
-            <button id="closeTheme" class="w-full mt-4 p-2 text-sm text-gray-500">Close</button>
         </div>
     </div>
 
@@ -190,7 +184,7 @@
             <div class="flex items-center gap-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-xl mb-4 border border-border-gray">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <input type="text" id="searchInput" placeholder="Search batches..." class="bg-transparent border-none outline-none w-full text-lg">
-                <button onclick="document.getElementById('searchModal').classList.remove('active')" class="text-gray-400 hover:text-white">✕</button>
+                <button onclick="document.getElementById('searchModal').classList.remove('active')" class="text-gray-400">✕</button>
             </div>
             <div id="searchResults" class="max-h-[60vh] overflow-y-auto space-y-2"></div>
         </div>

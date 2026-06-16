@@ -1,0 +1,10 @@
+name = "rahul-study-bot"
+main = "index.js"
+compatibility_date = "2026-06-14"
+
+[[kv_namespaces]]
+binding = "NOTIF_KV"
+id = "fc67c437cd274b49b1cbb4177c2e1b12"
+
+[triggers]
+crons = ["*/2 * * * *"]
