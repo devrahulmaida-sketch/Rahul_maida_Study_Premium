@@ -79,7 +79,6 @@
 <body class="flex flex-col items-center justify-center p-6">
     <div class="hero-bg"></div>
 
-    <!-- Header Section -->
     <header class="text-center mb-16 animate-float">
         <div class="flex items-center justify-center gap-4 mb-4">
             <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="w-16 h-16 rounded-full border-2 border-indigo-500 shadow-2xl" alt="Logo">
@@ -88,54 +87,39 @@
         <p class="text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px]">Premium Education Ecosystem</p>
     </header>
 
-    <!-- Platform Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl">
         
         <!-- PW Platform -->
-        <div onclick="location.href='https://pw.rahul-maida-study-premium.pages.dev/'" class="glass-card p-10 flex flex-col items-center text-center group">
+        <div onclick="location.href='/pw/'" class="glass-card p-10 flex flex-col items-center text-center group">
             <div class="platform-icon group-hover:scale-110 transition-transform">⚡</div>
             <h2 class="text-2xl font-black mb-2 tracking-tight">PW PORTAL</h2>
             <p class="text-gray-400 text-xs mb-6 font-medium leading-relaxed">Access Arjuna, Lakshya & all premium batches directly.</p>
-            <div class="subdomain-label mb-6">pw.rahulmaida.study</div>
-            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Platform</button>
+            <div class="subdomain-label mb-6 text-indigo-500">READY TO STUDY</div>
+            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Portal</button>
         </div>
 
         <!-- Mission Jeet Platform -->
-        <div onclick="location.href='https://mj.rahul-maida-study-premium.pages.dev/'" class="glass-card p-10 flex flex-col items-center text-center group">
+        <div onclick="location.href='/mj/'" class="glass-card p-10 flex flex-col items-center text-center group">
             <div class="platform-icon group-hover:scale-110 transition-transform">🎯</div>
             <h2 class="text-2xl font-black mb-2 tracking-tight">MISSION JEET</h2>
             <p class="text-gray-400 text-xs mb-6 font-medium leading-relaxed">Integrated Eduvibe platform for specialized learning.</p>
-            <div class="subdomain-label mb-6">mj.rahulmaida.study</div>
-            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Platform</button>
+            <div class="subdomain-label mb-6 text-indigo-500">READY TO STUDY</div>
+            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Portal</button>
         </div>
 
         <!-- Next Topper Platform -->
-        <div onclick="location.href='https://nt.rahul-maida-study-premium.pages.dev/'" class="glass-card p-10 flex flex-col items-center text-center group">
+        <div onclick="location.href='/nt/'" class="glass-card p-10 flex flex-col items-center text-center group">
             <div class="platform-icon group-hover:scale-110 transition-transform">🏆</div>
             <h2 class="text-2xl font-black mb-2 tracking-tight">NEXT TOPPER</h2>
             <p class="text-gray-400 text-xs mb-6 font-medium leading-relaxed">The elite toppers hub for advanced preparation.</p>
-            <div class="subdomain-label mb-6">nt.rahulmaida.study</div>
-            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Platform</button>
+            <div class="subdomain-label mb-6 text-indigo-500">READY TO STUDY</div>
+            <button class="btn-glow px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest">Enter Portal</button>
         </div>
 
     </div>
 
-    <!-- Footer -->
     <footer class="mt-20 text-center">
         <p class="text-gray-500 font-bold text-[9px] uppercase tracking-widest">© 2026 RAHUL MAIDA HUB | ALL AMBITIONS SERVED</p>
     </footer>
-
-    <script>
-        // Interactive Hover Effect
-        document.querySelectorAll('.glass-card').forEach(card => {
-            card.onmousemove = e => {
-                const rect = card.getBoundingClientRect(),
-                    x = e.clientX - rect.left,
-                    y = e.clientY - rect.top;
-                card.style.setProperty("--mouse-x", `${x}px`);
-                card.style.setProperty("--mouse-y", `${y}px`);
-            };
-        });
-    </script>
 </body>
 </html>
