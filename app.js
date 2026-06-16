@@ -22,17 +22,22 @@ function openBatch(id, name) {
     setTimeout(() => showPreloader(false), 5000);
 }
 
-// --- MISSION JEET PORTAL (Invisible Redirect) ---
+// --- PORTAL REDIRECTS (MISSION JEET & NEXT TOPPER) ---
 function openMissionJeet() {
-    const targetUrl = `https://eduvibe-mj.pages.dev/`;
+    openIframePortal(`https://eduvibe-mj.pages.dev/`);
+}
+
+function openNextTopper() {
+    openIframePortal(`https://eduvibe-nt.pages.dev/`);
+}
+
+function openIframePortal(url) {
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
-    
     container.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     showPreloader(true);
-    
-    iframe.src = targetUrl;
+    iframe.src = url;
     iframe.onload = () => showPreloader(false);
     setTimeout(() => showPreloader(false), 5000);
 }
@@ -51,10 +56,8 @@ function toggleFav(id) {
     const idx = favorites.indexOf(id);
     if (idx > -1) favorites.splice(idx, 1);
     else favorites.push(id);
-    
     localStorage.setItem('fav-batches', JSON.stringify(favorites));
     renderBatchGrid();
-    
     const btn = document.getElementById('favToggleBtn');
     btn.classList.add('scale-110');
     setTimeout(() => btn.classList.remove('scale-110'), 200);
@@ -65,7 +68,8 @@ function applyTheme(theme) {
     currentTheme = theme;
     document.body.classList.toggle('dark-mode', theme === 'dark');
     localStorage.setItem('theme-mode', theme);
-    document.getElementById('themeModal').classList.remove('active');
+    const modal = document.getElementById('themeModal');
+    if (modal) modal.classList.remove('active');
 }
 
 // --- RENDERING ---
@@ -116,7 +120,6 @@ window.onscroll = () => {
     }
 };
 
-// --- MISC ---
 function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
 
 function handleSearch() {
@@ -132,7 +135,6 @@ function handleSearch() {
     `).join('');
 }
 
-// --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
     applyTheme(currentTheme);
     try {
