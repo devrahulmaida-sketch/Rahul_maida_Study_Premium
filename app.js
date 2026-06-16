@@ -9,7 +9,7 @@ let mode = 'all';
 // --- INVISIBLE REDIRECT LOGIC ---
 function openBatch(id, name) {
     const bName = encodeURIComponent(name);
-    const targetUrl = `https://studypanda.in/study-v2/batches/${id}?name=${bName}`;
+    const targetUrl = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
     
