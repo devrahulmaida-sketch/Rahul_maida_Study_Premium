@@ -8,8 +8,8 @@ let mode = 'all';
 
 // --- INVISIBLE REDIRECT LOGIC ---
 function openBatch(id, name) {
-    const bName = encodeURIComponent(name);
-    const targetUrl = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
+    const bName = encodeURIComponent(name).replace(/%20/g, '+');
+    const targetUrl = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
     
