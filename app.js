@@ -1,18 +1,10 @@
 
-const CONFIG = {
-    CLIENT_ID: "5eb393ee95fab7468a79d189",
-    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev",
-    SENDER_ID: "766499830677"
-};
-
 let allBatches = [];
 let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
-let lastAnnouncements = JSON.parse(localStorage.getItem('last-announcements') || '{}');
-let mode = 'all'; 
 let currentTheme = localStorage.getItem('theme-mode') || 'dark';
-
 let displayCount = 60;
 const LOAD_STEP = 40;
+let mode = 'all';
 
 // --- INVISIBLE REDIRECT LOGIC ---
 function openBatch(id, name) {
@@ -21,57 +13,27 @@ function openBatch(id, name) {
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
     
+    // Show container immediately to avoid white screen lag
+    container.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     showPreloader(true);
+    
     iframe.src = targetUrl;
-    iframe.onload = () => {
-        showPreloader(false);
-        container.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    };
-    // Timeout fallback
-    setTimeout(() => { if (container.style.display !== 'flex') { showPreloader(false); container.style.display = 'flex'; } }, 3500);
+    iframe.onload = () => showPreloader(false);
+    
+    // Fallback if onload doesn't fire
+    setTimeout(() => showPreloader(false), 4000);
 }
 
 function closeIframe() {
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
-    iframe.src = 'about:blank';
+    iframe.src = 'about:blank'; // Clear it to stop video/audio
     container.style.display = 'none';
     document.body.style.overflow = '';
-}
-
-// --- NOTIFICATION LOGIC ---
-async function checkAnnouncementsForBatch(id) {
-    try {
-        const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3MDM2NTYuMzE1LCJkYXRhIjp7Il9pZCI6IjY5YjRmN2RhMGQyOTk0ZjE3MTliMjBlMCIsInVzZXJuYW1lIjoiODcyNjgzMjk0MiIsImZpcnN0TmFtZSI6Ik5pa2hpbCIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiOFBwa2RRejdRN3VWa0wyNXNtSmJFd182OWI0ZjdkYTBkMjk5NGYxNzE5YjIwZTAiLCJpYXQiOjE3ODEwOTg4NTZ9.5vM0jZUjaeVWr_EwW2bmgdlPXBgcOXVlDAIQ95Y6ezw";
-        const url = `${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(`/v1/batches/${id}/announcement?page=1`)}&token=${token}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        const list = Array.isArray(data.data) ? data.data : (data.data?.data || []);
-        if (list.length > 0) {
-            const latest = list[0];
-            const batch = allBatches.find(b => (b._id || b.batch_id) === id);
-            if (lastAnnouncements[id] !== latest._id) {
-                showAnnouncementModal(batch?.name || 'Batch Update', latest);
-                lastAnnouncements[id] = latest._id;
-                localStorage.setItem('last-announcements', JSON.stringify(lastAnnouncements));
-            }
-        }
-    } catch (e) { console.error("Notif check failed", e); }
-}
-
-function showAnnouncementModal(batchName, announcement) {
-    const modal = document.getElementById('announcementModal');
-    document.getElementById('notifBatchLabel').innerText = batchName;
-    document.getElementById('notifHeading').innerText = announcement.heading || 'Important Update';
-    document.getElementById('notifFullText').innerText = announcement.announcement;
-    const imgContainer = document.getElementById('notifImageContainer');
-    if (announcement.attachment?.key) {
-        document.getElementById('notifFullImage').src = announcement.attachment.baseUrl + announcement.attachment.key;
-        imgContainer.classList.remove('hidden');
-    } else imgContainer.classList.add('hidden');
-    modal.classList.add('active');
+    
+    // Force re-render of batches to ensure they are visible
+    renderBatchGrid();
 }
 
 // --- RENDERING ---
@@ -114,15 +76,9 @@ window.onscroll = () => {
 function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); localStorage.setItem('theme-mode', theme); }
 function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
 
-async function toggleFav(id) {
+function toggleFav(id) {
     if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
-    else {
-        favorites.push(id);
-        if ("Notification" in window) {
-            const p = await Notification.requestPermission();
-            if (p === "granted") fetch(`${CONFIG.PROXY}/register?batchId=${id}`).catch(e => {});
-        }
-    }
+    else favorites.push(id);
     localStorage.setItem('fav-batches', JSON.stringify(favorites));
     renderBatchGrid();
 }
@@ -148,10 +104,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await res.json();
         allBatches = data.batches;
         renderBatchGrid();
-        favorites.forEach(id => checkAnnouncementsForBatch(id));
     } catch (e) { console.error("Init failed"); }
-
     showPreloader(false);
+
     document.getElementById('favToggleBtn').onclick = (e) => {
         mode = mode === 'fav' ? 'all' : 'fav';
         e.currentTarget.classList.toggle('text-indigo-500', mode === 'fav');
@@ -161,7 +116,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('searchBtn').onclick = () => document.getElementById('searchModal').classList.add('active');
     document.getElementById('searchInput').oninput = handleSearch;
     document.querySelectorAll('.theme-card').forEach(card => card.onclick = () => { applyTheme(card.dataset.theme); document.getElementById('themeModal').classList.remove('active'); });
-    window.onclick = (e) => { if (['themeModal','searchModal','announcementModal'].includes(e.target.id)) e.target.classList.remove('active'); };
-
-    setInterval(() => favorites.forEach(id => checkAnnouncementsForBatch(id)), 300000);
+    window.onclick = (e) => { if (['themeModal','searchModal'].includes(e.target.id)) e.target.classList.remove('active'); };
 });
