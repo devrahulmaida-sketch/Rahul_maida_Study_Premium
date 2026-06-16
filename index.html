@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rahul Maida - Free Study</title>
+    <title>Rahul Maida - Study Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'custom-purple': 'var(--primary-color)',
-                        'dark-bg': 'var(--bg-primary)',
-                        'card-bg': 'var(--card-bg)',
-                        'border-gray': 'var(--card-border)'
+                        'custom-purple': '#5a4bda',
+                        'dark-bg': '#09090b',
+                        'card-bg': '#18181b',
+                        'border-gray': '#27272a'
                     }
                 }
             }
@@ -24,48 +25,14 @@
         :root {
             --primary-color:#5a4bda;
             --primary-hover:#4a3bc8;
-            --primary-rgb:90 75 218;
-            --primary-color-rgb:90, 75, 218;
-            --secondary-color:#6d61e7;
-            --accent-color:#f972b9;
             --text-primary:#333333;
             --text-secondary:#666666;
-            --text-tertiary:#999999;
             --bg-primary:#ffffff;
             --bg-secondary:#f5f7fa;
-            --bg-tertiary:#eaedf3;
             --card-bg:#ffffff;
             --card-border:#eaedf3;
-            --card-shadow:0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-            --card-shadow-hover:0 6px 16px rgba(90, 75, 218, 0.12), 0 3px 8px rgba(90, 75, 218, 0.08), 0 1px 4px rgba(90, 75, 218, 0.06);
-            --skeleton-bg:#f0f0f0;
-            --skeleton-shine:rgba(255, 255, 255, 0.8);
-            --success-color:#10b981;
-            --error-color:#ef4444;
-            --warning-color:#f59e0b;
-            --info-color:#3b82f6;
-            --border-radius-sm:0.375rem;
-            --border-radius:0.5rem;
-            --border-radius-lg:0.75rem;
-            --border-radius-xl:1rem;
-            --spacing-xs:0.25rem;
-            --spacing-sm:0.5rem;
-            --spacing:1rem;
-            --spacing-md:1.5rem;
-            --spacing-lg:2rem;
-            --spacing-xl:3rem;
-            --transition-fast:150ms ease;
-            --transition:300ms ease;
-            --transition-slow:500ms ease;
-            --container-width:1400px;
             --header-height:4.5rem;
-            --footer-height:3rem;
-            --box-shadow:0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08);
-            --bg-card: var(--card-bg);
-            --border-color: var(--card-border);
-            --shadow: var(--card-shadow);
-            --accent-hover: var(--primary-hover);
-            --subject-img-bg: var(--bg-primary);
+            --transition:200ms ease;
         }
 
         body {
@@ -75,77 +42,21 @@
             padding-top: var(--header-height);
             transition: background-color var(--transition), color var(--transition);
             font-family: 'Sora', sans-serif;
-            --bg-card: var(--card-bg);
-            --border-color: var(--card-border);
-            --shadow: var(--card-shadow);
-            --accent-hover: var(--primary-hover);
-            --subject-img-bg: var(--bg-primary);
         }
 
-        /* 10 Custom Themes */
         .dark-mode {
-            --primary-color:#6d62ee;
-            --primary-hover:#7c72f5;
-            --primary-rgb:109 98 238;
-            --primary-color-rgb:109, 98, 238;
-            --secondary-color:#5a4fcd;
             --text-primary:#ffffff;
             --text-secondary:#d0d0d0;
-            --text-tertiary:#a0a0a0;
-            --bg-primary:#000000;
-            --bg-secondary:#0a0a0a;
-            --bg-tertiary:#141414;
-            --card-bg:#0a0a0a;
-            --card-border:#1a1a1a;
-            --card-shadow:0 8px 32px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(109, 98, 238, 0.15);
-            --card-shadow-hover:0 12px 48px rgba(109, 98, 238, 0.4), 0 8px 32px rgba(109, 98, 238, 0.3), 0 4px 16px rgba(109, 98, 238, 0.2), 0 0 0 2px rgba(109, 98, 238, 0.5);
-            --skeleton-bg:#141414;
-            --skeleton-shine:rgba(255, 255, 255, 0.03);
+            --bg-primary:#09090b;
+            --bg-secondary:#18181b;
+            --card-bg:#18181b;
+            --card-border:#27272a;
         }
 
-        .sandalwood-mode {
-            --primary-color:#c18c5d; --primary-hover:#a67347; --primary-rgb:193 140 93; --primary-color-rgb:193, 140, 93;
-            --secondary-color:#dcb68a; --accent-color:#e6c8a4; --text-primary:#3e2723; --text-secondary:#5d4037;
-            --text-tertiary:#8d6e63; --bg-primary:#f7f2ea; --bg-secondary:#efe7d8; --bg-tertiary:#e5d9c2;
-            --card-bg:#ffffff; --card-border:#e2d8c3; --card-shadow:0 4px 12px rgba(193, 140, 93, 0.12);
-        }
-
-        .forest-emerald {
-            --primary-color:#1b4d3e; --primary-hover:#12352a; --primary-rgb:27 77 62; --primary-color-rgb:27, 77, 62;
-            --secondary-color:#52b788; --text-primary:#122822; --text-secondary:#2d5a4c; --bg-primary:#f0f7f4;
-            --card-bg:#ffffff; --card-border:#cadcd2;
-        }
-
-        .ocean-deep {
-            --primary-color:#00adb5; --primary-hover:#00828a; --primary-rgb:0 173 181; --primary-color-rgb:0, 173, 181;
-            --text-primary:#ffffff; --bg-primary:#0a0e17; --card-bg:#101623; --card-border:#1d293d;
-        }
-
-        .sakura-blossom {
-            --primary-color:#d85a7f; --primary-hover:#c04568; --primary-rgb:216 90 127; --primary-color-rgb:216, 90, 127;
-            --text-primary:#4a1c27; --bg-primary:#fff6f8; --card-bg:#ffffff; --card-border:#f7d8df;
-        }
-
-        .dracula-midnight {
-            --primary-color:#bd93f9; --primary-hover:#a878e6; --primary-rgb:189 147 249; --primary-color-rgb:189, 147, 249;
-            --text-primary:#f8f8f2; --bg-primary:#18181f; --card-bg:#21212a; --card-border:#323342;
-        }
-
-        .lavender-mist {
-            --primary-color:#8b5cf6; --primary-hover:#7c3aed; --primary-rgb:139 92 246; --primary-color-rgb:139, 92, 246;
-            --text-primary:#1e1b4b; --bg-primary:#f5f3ff; --card-bg:#ffffff; --card-border:#ddd6fe;
-        }
-
-        .cyberpunk-neon {
-            --primary-color:#00ffff; --primary-hover:#00cccc; --primary-rgb:0 255 255; --primary-color-rgb:0, 255, 255;
-            --text-primary:#ffffff; --bg-primary:#050508; --card-bg:#0d0e15; --card-border:#161722;
-        }
-
-        /* Layout */
         #appHeader {
             height: var(--header-height);
-            background-color: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
             padding: 0 24px;
             display: flex;
             align-items: center;
@@ -153,147 +64,130 @@
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 50;
+            backdrop-filter: blur(12px);
         }
-        .header-logo-img {
-            width: 40px; height: 40px; border-radius: 50%;
-            border: 2px solid var(--primary-color) !important;
-            box-shadow: 0 0 16px rgba(var(--primary-color-rgb), 0.5) !important;
-        }
-        .header-title { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.4px; }
+        .header-logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color) !important; }
+        .header-title { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.4px; cursor: pointer; }
         .header-title span { color: var(--primary-color); }
 
         .header-btn {
-            width: 40px; height: 40px; border-radius: 50%;
+            width: 38px; height: 38px; border-radius: 10px;
             background-color: var(--bg-secondary); color: var(--text-primary);
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .header-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(var(--primary-color-rgb), 0.35);
-            color: var(--primary-color);
         }
 
-        main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+        main { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
 
         .card {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 1rem; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1rem; overflow: hidden; transition: transform 0.2s ease;
             cursor: pointer; position: relative;
         }
-        .card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(var(--primary-color-rgb), 0.25);
-            border-color: var(--primary-color);
-        }
+        .card:hover { transform: translateY(-4px); border-color: var(--primary-color); }
         .card-img-wrap { width: 100%; height: 160px; background: var(--bg-secondary); }
         .card-img { width: 100%; height: 100%; object-fit: contain; }
-        .card-content { padding: 1.25rem; }
-        .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; height: 3rem; overflow: hidden; line-clamp: 2; }
+        .card-content { padding: 1rem; }
+        .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; height: 2.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         
         .action-btn {
-            width: 100%; padding: 0.75rem; background: var(--primary-color);
+            width: 100%; padding: 0.6rem; background: var(--primary-color);
             color: white; text-align: center; border-radius: 0.75rem;
-            font-weight: 700; font-size: 0.875rem; transition: all 0.2s;
+            font-weight: 700; font-size: 0.8rem;
         }
-        .card:hover .action-btn { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3); }
 
-        /* Modal & Overlays */
+        .live-badge { position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; animation: pulse 2s infinite; z-index: 10; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        
+        .video-modal { position: fixed; inset: 0; background: black; z-index: 500; display: none; flex-direction: column; }
+        .video-modal.active { display: flex; }
+        #videoPlayer { width: 100%; height: 100%; max-height: 80vh; background: #000; }
+
         .theme-modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
             display: none; align-items: center; justify-content: center; z-index: 100;
         }
         .theme-modal-overlay.active { display: flex; }
-        .theme-modal-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.5rem; width: 90%; max-width: 600px; padding: 1.5rem; }
-        .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        .theme-card { background: var(--bg-secondary); border: 2px solid transparent; border-radius: 1rem; padding: 1rem; cursor: pointer; display: flex; align-items: center; gap: 1rem; }
-        .theme-card.active { border-color: var(--primary-color); background: rgba(var(--primary-color-rgb), 0.1); }
+        .theme-modal-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; width: 90%; max-width: 400px; padding: 1.5rem; }
+        .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .theme-card { background: var(--bg-secondary); border: 2px solid transparent; border-radius: 0.75rem; padding: 1rem; cursor: pointer; text-align: center; font-weight: 600; }
+        .theme-card.active { border-color: var(--primary-color); color: var(--primary-color); }
 
-        /* Loading */
-        #globalPreloader { position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
+        #globalPreloader { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
         
         @media (max-width: 768px) {
-            #appHeader { padding: 0 16px; }
-            .header-title { font-size: 1rem; }
+            #appHeader { padding: 0 12px; }
+            .header-title { font-size: 0.85rem; }
             main { padding: 1rem; }
-            .theme-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+    <div id="videoModal" class="video-modal">
+        <div class="flex justify-between items-center p-4 border-b border-white/10">
+            <h3 id="videoTitle" class="text-white font-bold truncate pr-4 text-sm">Video Player</h3>
+            <button onclick="closeVideo()" class="text-white text-2xl">✕</button>
+        </div>
+        <div class="flex-grow flex items-center justify-center relative">
+            <video id="videoPlayer" controls playsinline></video>
+            <div id="videoLoader" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden"><div class="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>
+        </div>
+    </div>
+
     <div id="globalPreloader">
-        <svg class="animate-spin h-10 w-10 text-custom-purple" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+        <div class="animate-spin h-8 w-8 border-4 border-custom-purple border-t-transparent rounded-full"></div>
     </div>
 
     <header id="appHeader">
-        <div class="flex items-center gap-3">
-            <button id="backBtn" class="header-btn hidden" title="Back">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </button>
+        <div class="flex items-center gap-2">
+            <button id="backBtn" class="header-btn hidden"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></button>
             <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="header-logo-img" alt="Logo">
-            <div class="header-title" id="pageTitle" onclick="location.href='/'">RAHUL MAIDA<span> FREE STUDY</span></div>
+            <div class="header-title" id="pageTitle" onclick="location.href='/'">RAHUL MAIDA<span> STUDY PREMIUM</span></div>
         </div>
-        <div class="flex items-center gap-3">
-            <button id="themeBtn" class="header-btn" title="Themes">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.172-1.172a4 4 0 115.656 5.656L10 17.657" />
-                </svg>
-            </button>
-            <button id="searchBtn" class="header-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-            </button>
+        <div class="flex items-center gap-2">
+            <button id="favToggleBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
+            <button id="themeBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg></button>
+            <button id="searchBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
         </div>
     </header>
 
-    <main>
-        <div id="batchGrid" class="grid">
-            <!-- Cards will be injected here -->
-        </div>
-    </main>
+    <main><div id="batchGrid" class="grid"></div></main>
 
-    <!-- Theme Modal -->
-    <div id="themeModal" class="theme-modal-overlay">
-        <div class="theme-modal-container">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white">Select Theme</h3>
-                <button id="closeTheme" class="text-gray-400 hover:text-white">✕</button>
-            </div>
-            <div class="theme-grid">
-                <div class="theme-card active" data-theme="dark">Dark Mode</div>
-                <div class="theme-card" data-theme="light">Light Mode</div>
-                <div class="theme-card" data-theme="sandalwood">Sandalwood</div>
-                <div class="theme-card" data-theme="forest-emerald">Forest Emerald</div>
-                <div class="theme-card" data-theme="ocean-deep">Ocean Deep</div>
-                <div class="theme-card" data-theme="sakura-blossom">Sakura Blossom</div>
-                <div class="theme-card" data-theme="dracula-midnight">Dracula Midnight</div>
-                <div class="theme-card" data-theme="lavender-mist">Lavender Mist</div>
-                <div class="theme-card" data-theme="cyberpunk-neon">Cyberpunk Neon</div>
+    <div id="announcementModal" class="theme-modal-overlay">
+        <div class="theme-modal-container max-w-lg p-0 overflow-hidden">
+            <div id="notifImageContainer" class="w-full h-48 bg-gray-800 hidden"><img id="notifFullImage" class="w-full h-full object-cover"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-2"><div><span class="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter" id="notifBatchLabel">Batch Name</span><h2 class="text-xl font-extrabold" id="notifHeading">Important Update</h2></div><button onclick="document.getElementById('announcementModal').classList.remove('active')" class="text-gray-500 hover:text-white">✕</button></div>
+                <p id="notifFullText" class="text-sm text-gray-400 leading-relaxed mb-6">Announcement content...</p>
+                <button onclick="document.getElementById('announcementModal').classList.remove('active')" class="action-btn">GOT IT</button>
             </div>
         </div>
     </div>
 
-    <!-- Search Modal -->
+    <div id="historyModal" class="theme-modal-overlay">
+        <div class="theme-modal-container max-w-xl">
+            <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold">Recent Notices</h3><button onclick="document.getElementById('historyModal').classList.remove('active')" class="text-gray-400 text-2xl">✕</button></div>
+            <div id="historyContent" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+        </div>
+    </div>
+
+    <div id="themeModal" class="theme-modal-overlay">
+        <div class="theme-modal-container">
+            <h3 class="text-lg font-bold mb-4">Appearance</h3>
+            <div class="theme-grid"><div class="theme-card" data-theme="dark">Dark</div><div class="theme-card" data-theme="light">Light</div></div>
+            <button id="closeTheme" class="w-full mt-4 p-2 text-sm text-gray-500">Close</button>
+        </div>
+    </div>
+
     <div id="searchModal" class="theme-modal-overlay">
         <div class="theme-modal-container max-w-2xl">
             <div class="flex items-center gap-4 bg-secondary p-4 rounded-xl mb-4 border border-border-gray">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <input type="text" id="searchInput" placeholder="Search batches..." class="bg-transparent border-none outline-none text-white w-full text-lg">
-                <button id="closeSearch" class="text-gray-400 hover:text-white">✕</button>
+                <button onclick="document.getElementById('searchModal').classList.remove('active')" class="text-gray-400 hover:text-white">✕</button>
             </div>
-            <div id="searchResults" class="max-h-[60vh] overflow-y-auto space-y-2">
-                <!-- Results will appear here -->
-            </div>
+            <div id="searchResults" class="max-h-[60vh] overflow-y-auto space-y-2"></div>
         </div>
     </div>
 
