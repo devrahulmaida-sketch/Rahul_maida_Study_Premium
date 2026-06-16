@@ -21,6 +21,24 @@ let currentTheme = localStorage.getItem('theme-mode') || 'dark';
 let displayCount = 80;
 let hls = null;
 
+// --- DYNAMIC URL PLAYER LOGIC ---
+function checkDynamicUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const signature = params.get('signature');
+    
+    if (videoUrl) {
+        const fullUrl = videoUrl + (signature ? (signature.startsWith('?') ? signature : '?' + signature) : '');
+        const title = "Direct External Stream";
+        console.log("Dynamic URL Detected:", fullUrl);
+        
+        // Wait for DOM to be ready then play
+        setTimeout(() => {
+            startHlsPlayer(fullUrl, title);
+        }, 1000);
+    }
+}
+
 // --- TOKEN & PROXY ---
 async function getFreshToken() {
     if (state.bearer) return state.bearer;
@@ -29,17 +47,18 @@ async function getFreshToken() {
         const data = await res.json();
         state.bearer = data.token;
         return state.bearer;
-    } catch(e) { return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NH0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8"; }
+    } catch(e) {
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NH0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8";
+    }
 }
 
-async function apiCall(endpoint, method = "GET", body = null) {
+async function apiCall(endpoint) {
     const token = await getFreshToken();
     const url = `${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(endpoint)}&token=${token}`;
-    const res = await fetch(url, {
-        method: method,
-        body: body ? JSON.stringify(body) : null
-    });
-    return await res.json();
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.success === false) throw new Error(data.message || "Blocked");
+    return data;
 }
 
 // --- NAVIGATION ---
@@ -56,6 +75,8 @@ function goBack() {
         const prev = state.history.pop();
         Object.assign(state, prev);
         render();
+    } else {
+        location.href = '/';
     }
 }
 
@@ -75,7 +96,6 @@ async function render() {
         } 
         else if (state.view === 'subjects') {
             pageTitle.innerHTML = `<span>${state.batchTitle}</span>`;
-            // Using /v3/batches/details for subjects as confirmed in Delta logs
             const data = await apiCall(`/v3/batches/${state.currentBatch}/details`);
             const subjects = data.data?.subjects || [];
             container.innerHTML = `<div class="grid">${subjects.map(s => `
@@ -107,18 +127,17 @@ async function render() {
             const data = await apiCall(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?tag=${state.currentTopic}&contentType=videos&page=1`);
             const items = data.data || [];
             container.innerHTML = `<div class="grid">${items.map(v => `
-                <div class="card" onclick="playVideo('${state.currentBatch}', '${v._id}', '${v.topic.replace(/'/g,"")}', '${state.currentSubject}')">
+                <div class="card" onclick="openInternalVideo('${state.currentBatch}', '${v._id}', '${v.topic.replace(/'/g,"")}', '${state.currentSubject}')">
                     <div class="card-img-wrap"><img src="${v.videoDetails?.image || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="card-img" loading="lazy"></div>
                     <div class="card-content">
-                        <div class="card-title text-xs font-bold">${v.topic}</div>
-                        <div class="action-btn">WATCH NOW</div>
+                        <div class="card-title text-xs font-bold text-center">${v.topic}</div>
+                        <div class="action-btn mt-2">WATCH NOW</div>
                     </div>
                 </div>
             `).join('')}</div>`;
         }
     } catch (e) {
-        console.error(e);
-        container.innerHTML = `<div class="text-center py-20 text-red-500 font-bold tracking-widest">ERROR: UNAUTHORIZED OR BLOCKED</div>`;
+        container.innerHTML = `<div class="text-center py-20"><div class="text-red-500 font-bold mb-4 uppercase tracking-widest">Blocked or Unauthorized</div><p class="text-xs text-gray-500 mb-6">${e.message}</p><button onclick="render()" class="action-btn w-40 mx-auto">RETRY</button></div>`;
     } finally {
         showPreloader(false);
     }
@@ -146,34 +165,36 @@ function renderBatchGrid() {
     }).join('');
 }
 
-async function playVideo(batchId, childId, title, subjectId) {
-    const modal = document.getElementById('videoModal');
-    const player = document.getElementById('videoPlayer');
+// --- VIDEO PLAYER ---
+async function openInternalVideo(batchId, childId, title, subjectId) {
     const loader = document.getElementById('videoLoader');
-    document.getElementById('videoTitle').innerText = title;
-    modal.classList.add('active');
     loader.classList.remove('hidden');
-
     try {
-        // Delta API is down, but often we can fetch from other mirrors.
-        // For now, let's keep the Delta link but handle the error.
         const res = await fetch(`https://apiserver.deltastudy.site/api/pw/video-url-details?batchId=${batchId}&childId=${childId}&subjectId=${subjectId}`);
         const data = await res.json();
         const streamUrl = data.data[0]?.url;
-        if (streamUrl) {
-            if (Hls.isSupported()) {
-                if (hls) hls.destroy();
-                hls = new Hls();
-                hls.loadSource(streamUrl);
-                hls.attachMedia(player);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => player.play());
-            } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
-                player.src = streamUrl;
-                player.play();
-            }
-        } else alert("Video Mirror Down. Try again later.");
-    } catch (e) { alert("Playback error."); }
+        if (streamUrl) startHlsPlayer(streamUrl, title);
+        else alert("Link Failed.");
+    } catch (e) { alert("Server error."); }
     finally { loader.classList.add('hidden'); }
+}
+
+function startHlsPlayer(url, title) {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('videoPlayer');
+    document.getElementById('videoTitle').innerText = title;
+    modal.classList.add('active');
+    
+    if (Hls.isSupported()) {
+        if (hls) hls.destroy();
+        hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(player);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => player.play());
+    } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+        player.src = url;
+        player.play();
+    }
 }
 
 function closeVideo() {
@@ -184,12 +205,24 @@ function closeVideo() {
 function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
 function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); localStorage.setItem('theme-mode', theme); }
 
+function toggleFav(id) {
+    if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
+    else favorites.push(id);
+    localStorage.setItem('fav-batches', JSON.stringify(favorites));
+    render();
+}
+
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
     applyTheme(currentTheme);
-    const res = await fetch('batches.json');
-    const data = await res.json();
-    allBatches = data.batches;
-    render();
+    checkDynamicUrl();
+    
+    try {
+        const res = await fetch('batches.json');
+        const data = await res.json();
+        allBatches = data.batches;
+        render();
+    } catch (e) { console.error("Batch load fail"); }
 
     document.getElementById('favToggleBtn').onclick = (e) => {
         mode = mode === 'fav' ? 'all' : 'fav';
