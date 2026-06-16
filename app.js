@@ -1,21 +1,35 @@
 
+const CONFIG = {
+    CLIENT_ID: "5eb393ee95fab7468a79d189",
+    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev",
+    SENDER_ID: "766499830677"
+};
+
 let allBatches = [];
+let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
+let lastAnnouncements = JSON.parse(localStorage.getItem('last-announcements') || '{}');
+let mode = 'all'; 
 let currentTheme = localStorage.getItem('theme-mode') || 'dark';
-let displayCount = 80;
+
+let displayCount = 60;
 const LOAD_STEP = 40;
 
 // --- INVISIBLE REDIRECT LOGIC ---
 function openBatch(id, name) {
-    const bName = encodeURIComponent(name).replace(/%20/g,'+');
-    const targetUrl = `https://stream.testuk.org/subjects?batchId=${id}&batchName=${bName}`;
-    
+    const bName = encodeURIComponent(name);
+    const targetUrl = `https://studypanda.in/study-v2/batches/${id}?name=${bName}`;
     const container = document.getElementById('iframeContainer');
     const iframe = document.getElementById('studyIframe');
     
+    showPreloader(true);
     iframe.src = targetUrl;
-    container.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    console.log("Opening in Iframe:", targetUrl);
+    iframe.onload = () => {
+        showPreloader(false);
+        container.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+    // Timeout fallback
+    setTimeout(() => { if (container.style.display !== 'flex') { showPreloader(false); container.style.display = 'flex'; } }, 3500);
 }
 
 function closeIframe() {
@@ -26,26 +40,68 @@ function closeIframe() {
     document.body.style.overflow = '';
 }
 
-// --- UI RENDERING ---
+// --- NOTIFICATION LOGIC ---
+async function checkAnnouncementsForBatch(id) {
+    try {
+        const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3MDM2NTYuMzE1LCJkYXRhIjp7Il9pZCI6IjY5YjRmN2RhMGQyOTk0ZjE3MTliMjBlMCIsInVzZXJuYW1lIjoiODcyNjgzMjk0MiIsImZpcnN0TmFtZSI6Ik5pa2hpbCIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiOFBwa2RRejdRN3VWa0wyNXNtSmJFd182OWI0ZjdkYTBkMjk5NGYxNzE5YjIwZTAiLCJpYXQiOjE3ODEwOTg4NTZ9.5vM0jZUjaeVWr_EwW2bmgdlPXBgcOXVlDAIQ95Y6ezw";
+        const url = `${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(`/v1/batches/${id}/announcement?page=1`)}&token=${token}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        const list = Array.isArray(data.data) ? data.data : (data.data?.data || []);
+        if (list.length > 0) {
+            const latest = list[0];
+            const batch = allBatches.find(b => (b._id || b.batch_id) === id);
+            if (lastAnnouncements[id] !== latest._id) {
+                showAnnouncementModal(batch?.name || 'Batch Update', latest);
+                lastAnnouncements[id] = latest._id;
+                localStorage.setItem('last-announcements', JSON.stringify(lastAnnouncements));
+            }
+        }
+    } catch (e) { console.error("Notif check failed", e); }
+}
+
+function showAnnouncementModal(batchName, announcement) {
+    const modal = document.getElementById('announcementModal');
+    document.getElementById('notifBatchLabel').innerText = batchName;
+    document.getElementById('notifHeading').innerText = announcement.heading || 'Important Update';
+    document.getElementById('notifFullText').innerText = announcement.announcement;
+    const imgContainer = document.getElementById('notifImageContainer');
+    if (announcement.attachment?.key) {
+        document.getElementById('notifFullImage').src = announcement.attachment.baseUrl + announcement.attachment.key;
+        imgContainer.classList.remove('hidden');
+    } else imgContainer.classList.add('hidden');
+    modal.classList.add('active');
+}
+
+// --- RENDERING ---
 function renderBatchGrid() {
     const grid = document.getElementById('batchGrid');
-    const items = allBatches.slice(0, displayCount);
+    const list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, displayCount);
     
-    grid.innerHTML = items.map(b => {
+    if (list.length === 0 && mode === 'fav') {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-bold uppercase text-xs">No Enrolled Batches</div>`;
+        return;
+    }
+
+    grid.innerHTML = list.map(b => {
         const id = b._id || b.batch_id;
+        const isFav = favorites.includes(id);
         return `
-            <div class="card" onclick="openBatch('${id}', '${b.name.replace(/'/g,"")}')">
-                <div class="card-img-wrap h-32 bg-black"><img src="${b.previewImage}" class="card-img opacity-80" loading="lazy"></div>
-                <div class="card-content p-4">
-                    <div class="card-title text-sm font-black uppercase text-gray-100">${b.name}</div>
+            <div class="card border-white/5 bg-gray-900/40">
+                <button onclick="event.stopPropagation(); toggleFav('${id}')" class="absolute top-3 right-3 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-${isFav ? 'yellow-400' : 'white'} hover:scale-110 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.07 6.223a1 1 0 00.95.69h6.544c.969 0 1.371 1.24.588 1.81l-5.297 3.848a1 1 0 00-.364 1.118l2.07 6.223c.3.921-.755 1.688-1.54 1.118l-5.297-3.848a1 1 0 00-1.175 0l-5.297 3.848c-.784.57-1.838-.197-1.539-1.118l2.07-6.223a1 1 0 00-.364-1.118L2.244 11.65c-.783-.57-.38-1.81.588-1.81h6.544a1 1 0 00.95-.69l2.07-6.223z" /></svg></button>
+                <div onclick="openBatch('${id}', '${b.name.replace(/'/g,"")}')">
+                    <div class="card-img-wrap h-32 bg-black"><img src="${b.previewImage}" class="card-img opacity-80" loading="lazy"></div>
+                    <div class="card-content p-4"><div class="card-title text-sm font-black uppercase text-gray-100">${b.name}</div></div>
+                    <div class="px-4 pb-4"><button class="action-btn w-full rounded-xl font-black">ENTER PORTAL</button></div>
                 </div>
-                <div class="px-4 pb-4"><button class="action-btn w-full rounded-xl font-black">ENTER PORTAL</button></div>
             </div>
         `;
     }).join('');
 }
 
 window.onscroll = () => {
+    if (mode === 'fav') return;
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
         if (displayCount < allBatches.length) {
             displayCount += LOAD_STEP;
@@ -54,10 +110,21 @@ window.onscroll = () => {
     }
 };
 
-// --- THEME & SEARCH ---
-function applyTheme(theme) {
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme-mode', theme);
+// --- MISC ---
+function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); localStorage.setItem('theme-mode', theme); }
+function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
+
+async function toggleFav(id) {
+    if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
+    else {
+        favorites.push(id);
+        if ("Notification" in window) {
+            const p = await Notification.requestPermission();
+            if (p === "granted") fetch(`${CONFIG.PROXY}/register?batchId=${id}`).catch(e => {});
+        }
+    }
+    localStorage.setItem('fav-batches', JSON.stringify(favorites));
+    renderBatchGrid();
 }
 
 function handleSearch() {
@@ -81,12 +148,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await res.json();
         allBatches = data.batches;
         renderBatchGrid();
-    } catch (e) { console.error("Data error"); }
+        favorites.forEach(id => checkAnnouncementsForBatch(id));
+    } catch (e) { console.error("Init failed"); }
 
-    document.getElementById('globalPreloader').style.display = 'none';
+    showPreloader(false);
+    document.getElementById('favToggleBtn').onclick = (e) => {
+        mode = mode === 'fav' ? 'all' : 'fav';
+        e.currentTarget.classList.toggle('text-indigo-500', mode === 'fav');
+        renderBatchGrid();
+    };
     document.getElementById('themeBtn').onclick = () => document.getElementById('themeModal').classList.add('active');
     document.getElementById('searchBtn').onclick = () => document.getElementById('searchModal').classList.add('active');
     document.getElementById('searchInput').oninput = handleSearch;
     document.querySelectorAll('.theme-card').forEach(card => card.onclick = () => { applyTheme(card.dataset.theme); document.getElementById('themeModal').classList.remove('active'); });
-    window.onclick = (e) => { if (['themeModal','searchModal'].includes(e.target.id)) e.target.classList.remove('active'); };
+    window.onclick = (e) => { if (['themeModal','searchModal','announcementModal'].includes(e.target.id)) e.target.classList.remove('active'); };
+
+    setInterval(() => favorites.forEach(id => checkAnnouncementsForBatch(id)), 300000);
 });
