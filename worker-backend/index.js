@@ -42,18 +42,26 @@ export default {
             return new Response(data, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        // 3. NEXT TOPPERS PROXY
+        // 3. NEXT TOPPERS PROXY (Final Robust Headers)
         if (url.pathname === "/nexttoppers") {
             const target = url.searchParams.get("endpoint");
             if (!target) return new Response("No endpoint", { status: 400 });
 
-            // nt.rarestudy.site API endpoint
-            const ntRes = await fetch(`https://nt.rarestudy.site${target}`, {
-                method: request.method,
-                headers: { 'Accept': 'application/json' }
-            });
-            const data = await ntRes.text();
-            return new Response(data, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            try {
+                const ntRes = await fetch(`https://nt.rarestudy.in${target}`, {
+                    method: request.method,
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        'Referer': 'https://rarestudy.in/',
+                        'Origin': 'https://rarestudy.in'
+                    }
+                });
+                const data = await ntRes.text();
+                return new Response(data, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            } catch (e) {
+                return new Response(JSON.stringify({ success: false, error: e.message }), { headers: corsHeaders });
+            }
         }
 
         return new Response("Rahul Multi-Proxy Active", { headers: corsHeaders });
