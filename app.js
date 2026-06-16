@@ -1,8 +1,7 @@
 
 const CONFIG = {
     CLIENT_ID: "5eb393ee95fab7468a79d189",
-    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev",
-    DELTA_API: "https://apiserver.deltastudy.site/api/pw"
+    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev"
 };
 
 let state = {
@@ -20,10 +19,9 @@ let allBatches = [];
 let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
 let currentTheme = localStorage.getItem('theme-mode') || 'dark';
 let displayCount = 80;
-const LOAD_STEP = 40;
 let hls = null;
 
-// --- TOKEN & PROXY LOGIC ---
+// --- TOKEN & PROXY ---
 async function getFreshToken() {
     if (state.bearer) return state.bearer;
     try {
@@ -31,19 +29,20 @@ async function getFreshToken() {
         const data = await res.json();
         state.bearer = data.token;
         return state.bearer;
-    } catch(e) {
-        console.error("Token fetch failed, using fallback.");
-        return "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3MDM2NTYuMzE1LCJkYXRhIjp7Il9pZCI6IjY5YjRmN2RhMGQyOTk0ZjE3MTliMjBlMCIsInVzZXJuYW1lIjoiODcyNjgzMjk0MiIsImZpcnN0TmFtZSI6Ik5pa2hpbCIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiOFBwa2RRejdRN3VWa0wyNXNtSmJFd182OWI0ZjdkYTBkMjk5NGYxNzE5YjIwZTAiLCJpYXQiOjE3ODEwOTg4NTZ9.5vM0jZUjaeVWr_EwW2bmgdlPXBgcOXVlDAIQ95Y6ezw";
-    }
+    } catch(e) { return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NH0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8"; }
 }
 
-async function apiGet(endpoint) {
+async function apiCall(endpoint, method = "GET", body = null) {
     const token = await getFreshToken();
-    const res = await fetch(`${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(endpoint)}&token=${token}`);
+    const url = `${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(endpoint)}&token=${token}`;
+    const res = await fetch(url, {
+        method: method,
+        body: body ? JSON.stringify(body) : null
+    });
     return await res.json();
 }
 
-// --- SPA NAVIGATION ---
+// --- NAVIGATION ---
 function navigate(view, params = {}) {
     state.history.push({ ...state, history: [] });
     state.view = view;
@@ -76,12 +75,14 @@ async function render() {
         } 
         else if (state.view === 'subjects') {
             pageTitle.innerHTML = `<span>${state.batchTitle}</span>`;
-            const data = await apiGet(`/v2/batches/${state.currentBatch}/subjects`);
-            container.innerHTML = `<div class="grid">${data.data.map(s => `
+            // Using /v3/batches/details for subjects as confirmed in Delta logs
+            const data = await apiCall(`/v3/batches/${state.currentBatch}/details`);
+            const subjects = data.data?.subjects || [];
+            container.innerHTML = `<div class="grid">${subjects.map(s => `
                 <div class="card" onclick="navigate('topics', { currentSubject: '${s._id}', subjectTitle: '${s.subject}' })">
                     <div class="card-img-wrap h-40"><img src="${s.imageId || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="card-img"></div>
                     <div class="card-content">
-                        <div class="card-title text-center text-xs font-bold">${s.subject}</div>
+                        <div class="card-title text-center text-xs font-bold uppercase">${s.subject}</div>
                         <div class="action-btn">VIEW CHAPTERS</div>
                     </div>
                 </div>
@@ -89,23 +90,25 @@ async function render() {
         }
         else if (state.view === 'topics') {
             pageTitle.innerHTML = `<span>${state.subjectTitle}</span>`;
-            const data = await apiGet(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?contentType=videos&page=1`);
+            const data = await apiCall(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?contentType=videos&page=1`);
+            const items = data.data || [];
             const tags = {};
-            data.data.forEach(item => item.tags.forEach(t => tags[t._id] = t.name));
+            items.forEach(item => item.tags.forEach(t => tags[t._id] = t.name));
 
-            container.innerHTML = `<div class="max-w-3xl mx-auto">${Object.entries(tags).map(([id, name]) => `
+            container.innerHTML = `<div class="max-w-3xl mx-auto py-4">${Object.entries(tags).map(([id, name]) => `
                 <div class="chapter-row" onclick="navigate('contents', { currentTopic: '${id}', topicTitle: '${name}' })">
-                    <span class="font-bold text-xs">${name}</span>
+                    <span class="font-bold text-xs tracking-tight uppercase">${name}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" /></svg>
                 </div>
             `).join('')}</div>`;
         }
         else if (state.view === 'contents') {
             pageTitle.innerHTML = `<span>${state.topicTitle}</span>`;
-            const data = await apiGet(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?tag=${state.currentTopic}&contentType=videos&page=1`);
-            container.innerHTML = `<div class="grid">${data.data.map(v => `
+            const data = await apiCall(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?tag=${state.currentTopic}&contentType=videos&page=1`);
+            const items = data.data || [];
+            container.innerHTML = `<div class="grid">${items.map(v => `
                 <div class="card" onclick="playVideo('${state.currentBatch}', '${v._id}', '${v.topic.replace(/'/g,"")}', '${state.currentSubject}')">
-                    <div class="card-img-wrap"><img src="${v.videoDetails?.image || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="card-img"></div>
+                    <div class="card-img-wrap"><img src="${v.videoDetails?.image || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="card-img" loading="lazy"></div>
                     <div class="card-content">
                         <div class="card-title text-xs font-bold">${v.topic}</div>
                         <div class="action-btn">WATCH NOW</div>
@@ -114,7 +117,8 @@ async function render() {
             `).join('')}</div>`;
         }
     } catch (e) {
-        container.innerHTML = `<div class="text-center py-20 text-red-500">Failed to load content.</div>`;
+        console.error(e);
+        container.innerHTML = `<div class="text-center py-20 text-red-500 font-bold tracking-widest">ERROR: UNAUTHORIZED OR BLOCKED</div>`;
     } finally {
         showPreloader(false);
     }
@@ -142,7 +146,6 @@ function renderBatchGrid() {
     }).join('');
 }
 
-// --- VIDEO PLAYER ---
 async function playVideo(batchId, childId, title, subjectId) {
     const modal = document.getElementById('videoModal');
     const player = document.getElementById('videoPlayer');
@@ -152,7 +155,9 @@ async function playVideo(batchId, childId, title, subjectId) {
     loader.classList.remove('hidden');
 
     try {
-        const res = await fetch(`${CONFIG.DELTA_API}/video-url-details?batchId=${batchId}&childId=${childId}&subjectId=${subjectId}`);
+        // Delta API is down, but often we can fetch from other mirrors.
+        // For now, let's keep the Delta link but handle the error.
+        const res = await fetch(`https://apiserver.deltastudy.site/api/pw/video-url-details?batchId=${batchId}&childId=${childId}&subjectId=${subjectId}`);
         const data = await res.json();
         const streamUrl = data.data[0]?.url;
         if (streamUrl) {
@@ -166,8 +171,8 @@ async function playVideo(batchId, childId, title, subjectId) {
                 player.src = streamUrl;
                 player.play();
             }
-        }
-    } catch (e) { alert("Failed to fetch stream."); }
+        } else alert("Video Mirror Down. Try again later.");
+    } catch (e) { alert("Playback error."); }
     finally { loader.classList.add('hidden'); }
 }
 
@@ -177,13 +182,8 @@ function closeVideo() {
 }
 
 function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
+function applyTheme(theme) { document.body.classList.toggle('dark-mode', theme === 'dark'); localStorage.setItem('theme-mode', theme); }
 
-function applyTheme(theme) {
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme-mode', theme);
-}
-
-// --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
     applyTheme(currentTheme);
     const res = await fetch('batches.json');

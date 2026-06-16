@@ -1,5 +1,9 @@
 
-const PW_CLIENT_ID = "5eb393ee95fab7468a79d189";
+const GF_CONFIG = {
+    APP_ID: "1770981347",
+    PLATFORM: "3",
+    VERSION: "1"
+};
 
 export default {
     async fetch(request, env) {
@@ -9,7 +13,7 @@ export default {
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, app_id, platform, user_id, Version',
         };
 
         if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -19,29 +23,39 @@ export default {
             try {
                 const res = await fetch('https://learnbyakp.online/api-credentials.js');
                 const text = await res.text();
-                // We'll try to find 'six' first, then 'four'
                 const matchSix = text.match(/six\s*=\s*'Bearer\s+([^']+)'/);
                 const matchFour = text.match(/four\s*=\s*'Bearer\s+([^']+)'/);
                 const token = (matchSix ? matchSix[1] : (matchFour ? matchFour[1] : null));
                 return new Response(JSON.stringify({ token }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             } catch (e) {
-                return new Response(JSON.stringify({ token: null, error: e.message }), { headers: corsHeaders });
+                return new Response(JSON.stringify({ token: null }), { headers: corsHeaders });
             }
         }
 
-        // 2. PROXY PW API (Subjects, Topics, Contents)
+        // 2. MOBILE PROXY (The Gloryfuel Way)
         if (url.pathname === "/proxy") {
             const target = params.get("endpoint");
             const token = params.get("token");
-            if (!target || !token) return new Response("Missing params", { status: 400 });
+            const method = request.method;
+            const body = await (method === "POST" ? request.text() : null);
+
+            // Target is typically api.studystark.com or penpencil's hidden endpoints
+            // Based on Gloryfuel, it's often a custom wrapper. 
+            // We'll target PenPencil's mobile endpoints.
+            const pwUrl = `https://api.penpencil.co${target}`;
 
             try {
-                const pwRes = await fetch(`https://api.penpencil.co${target}`, {
+                const pwRes = await fetch(pwUrl, {
+                    method: method,
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Client-Id': PW_CLIENT_ID,
-                        'Client-Type': 'WEB'
-                    }
+                        'app_id': GF_CONFIG.APP_ID,
+                        'platform': GF_CONFIG.PLATFORM,
+                        'Version': GF_CONFIG.VERSION,
+                        'Content-Type': 'application/json',
+                        'accept': 'application/json, text/plain, */*'
+                    },
+                    body: body
                 });
                 const data = await pwRes.text();
                 return new Response(data, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -50,6 +64,6 @@ export default {
             }
         }
 
-        return new Response("Rahul Independent Bot Active", { headers: corsHeaders });
+        return new Response("Rahul Mobile Proxy Active", { headers: corsHeaders });
     }
 };
