@@ -6,21 +6,6 @@
     <title>Rahul Maida - Study Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#5a4bda',
-                        'dark-bg': '#09090b',
-                        'card-bg': '#18181b',
-                        'border-gray': '#27272a'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         :root {
             --primary-color:#5a4bda;
@@ -94,12 +79,19 @@
             font-weight: 700; font-size: 0.75rem;
         }
 
-        .live-badge { position: absolute; top: 12px; left: 12px; background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; animation: pulse 2s infinite; z-index: 10; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        
-        .video-modal { position: fixed; inset: 0; background: black; z-index: 500; display: none; flex-direction: column; }
-        .video-modal.active { display: flex; }
-        #videoPlayer { width: 100%; height: 100%; max-height: 80vh; background: #000; }
+        /* Iframe Redirection Overlay */
+        .iframe-overlay {
+            position: fixed; inset: 0; background: #fff; z-index: 4000;
+            display: none; flex-direction: column;
+        }
+        .iframe-box { width: 100%; height: 100%; border: none; }
+        .back-btn-overlay {
+            position: absolute; top: 20px; left: 20px; z-index: 4100;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px);
+            color: white; padding: 10px 20px; border-radius: 50px;
+            font-weight: 800; font-size: 0.8rem; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
 
         .theme-modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
@@ -109,27 +101,20 @@
         .theme-modal-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.5rem; width: 90%; max-width: 400px; padding: 1.5rem; }
         
         #globalPreloader { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
-        
-        .chapter-row { background: var(--bg-secondary); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .chapter-row:hover { border-color: var(--primary-color); }
 
         @media (max-width: 768px) {
             #appHeader { padding: 0 12px; }
             .header-title { font-size: 0.8rem; }
             main { padding: 1rem; }
+            .back-btn-overlay { top: 15px; left: 15px; padding: 8px 16px; font-size: 0.7rem; }
         }
     </style>
 </head>
 <body class="dark-mode">
-    <div id="videoModal" class="video-modal">
-        <div class="flex justify-between items-center p-4 border-b border-white/10">
-            <h3 id="videoTitle" class="text-white font-bold truncate pr-4 text-xs uppercase tracking-widest">Video Player</h3>
-            <button onclick="closeVideo()" class="text-white text-2xl">✕</button>
-        </div>
-        <div class="flex-grow flex items-center justify-center relative">
-            <video id="videoPlayer" controls playsinline></video>
-            <div id="videoLoader" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden"><div class="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>
-        </div>
+    <!-- Iframe Redirection Layer -->
+    <div id="iframeContainer" class="iframe-overlay">
+        <button class="back-btn-overlay" onclick="closeIframe()">← BACK TO PORTAL</button>
+        <iframe id="studyIframe" class="iframe-box" allow="autoplay; fullscreen; clipboard-write"></iframe>
     </div>
 
     <div id="globalPreloader">
@@ -138,12 +123,10 @@
 
     <header id="appHeader">
         <div class="flex items-center gap-2">
-            <button id="backBtn" class="header-btn hidden" onclick="goBack()"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></button>
             <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="header-logo-img" alt="Logo">
-            <div class="header-title" id="pageTitle" onclick="location.href='/'">RAHUL<span> PREMIUM</span></div>
+            <div class="header-title" onclick="location.href='/'">RAHUL<span> PREMIUM</span></div>
         </div>
         <div class="flex items-center gap-2">
-            <button id="favToggleBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
             <button id="themeBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg></button>
             <button id="searchBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
         </div>
@@ -152,25 +135,6 @@
     <main id="mainContent">
         <div id="batchGrid" class="grid"></div>
     </main>
-
-    <!-- Modals -->
-    <div id="announcementModal" class="theme-modal-overlay">
-        <div class="theme-modal-container max-w-lg p-0 overflow-hidden">
-            <div id="notifImageContainer" class="w-full h-48 bg-gray-800 hidden"><img id="notifFullImage" class="w-full h-full object-cover"></div>
-            <div class="p-6">
-                <div class="flex justify-between items-start mb-2"><div><span class="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter" id="notifBatchLabel">Batch Update</span><h2 class="text-lg font-extrabold" id="notifHeading">Update</h2></div><button onclick="document.getElementById('announcementModal').classList.remove('active')" class="text-gray-500">✕</button></div>
-                <p id="notifFullText" class="text-xs text-gray-400 leading-relaxed mb-6">Content...</p>
-                <button onclick="document.getElementById('announcementModal').classList.remove('active')" class="action-btn">GOT IT</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="historyModal" class="theme-modal-overlay">
-        <div class="theme-modal-container max-w-xl">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold">Recent Notices</h3><button onclick="document.getElementById('historyModal').classList.remove('active')" class="text-gray-400">✕</button></div>
-            <div id="historyContent" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
-        </div>
-    </div>
 
     <div id="themeModal" class="theme-modal-overlay">
         <div class="theme-modal-container">
