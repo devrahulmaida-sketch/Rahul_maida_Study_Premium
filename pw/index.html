@@ -3,160 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rahul Maida - Study Premium</title>
+    <title>Rahul Maida - Premium Study Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                        'secondary': '#8b5cf6',
+                        'dark-bg': '#09090b',
+                        'card-bg': '#18181b',
+                        'border-gray': '#27272a'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         :root {
-            --primary-color:#5a4bda;
-            --bg-primary:#ffffff;
-            --bg-secondary:#f5f7fa;
-            --card-bg:#ffffff;
-            --card-border:#eaedf3;
-            --header-height:4.5rem;
-            --transition:200ms ease;
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f4f4f5;
+            --card-bg: #ffffff;
+            --card-border: #e4e4e7;
+            --header-h: 4.5rem;
         }
 
         body {
-            background-color: var(--bg-primary) !important;
-            color: #333 !important;
-            min-height: 100vh;
-            padding-top: var(--header-height);
-            transition: background-color var(--transition);
-            font-family: 'Sora', sans-serif;
+            background-color: var(--bg-primary);
+            color: #18181b;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding-top: var(--header-h);
+            transition: all 0.3s ease;
         }
 
         .dark-mode {
-            --bg-primary:#09090b;
-            --bg-secondary:#18181b;
-            --card-bg:#18181b;
-            --card-border:#27272a;
-            color: #ffffff !important;
+            --bg-primary: #09090b;
+            --bg-secondary: #18181b;
+            --card-bg: #18181b;
+            --card-border: #27272a;
+            color: #f4f4f5;
         }
-        .dark-mode body { color: #ffffff !important; }
 
         #appHeader {
-            height: var(--header-height);
-            background-color: var(--card-bg);
-            border-bottom: 1px solid var(--card-border);
-            padding: 0 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 50;
+            height: var(--header-h);
+            background: rgba(var(--bg-primary-rgb), 0.8);
             backdrop-filter: blur(12px);
-        }
-        .header-logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color) !important; }
-        .header-title { font-size: 1rem; font-weight: 800; letter-spacing: -0.4px; cursor: pointer; text-transform: uppercase; }
-        .header-title span { color: var(--primary-color); }
-
-        .header-btn {
-            width: 38px; height: 38px; border-radius: 12px;
-            background-color: var(--bg-secondary); color: inherit;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--card-border);
+            z-index: 1000;
         }
 
-        main { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
-
-        .card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 1.25rem; overflow: hidden; transition: 0.2s ease;
-            cursor: pointer; position: relative; display: flex; flex-direction: column;
-        }
-        .card:hover { border-color: var(--primary-color); }
-        .card-img-wrap { width: 100%; height: 160px; background: var(--bg-secondary); overflow: hidden; }
-        .card-img { width: 100%; height: 100%; object-fit: contain; }
-        .card-content { padding: 1rem; flex-grow: 1; }
-        .card-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; height: 2.5rem; }
-        
-        .action-btn {
-            width: 100%; padding: 0.6rem; background: var(--primary-color);
-            color: white; text-align: center; border-radius: 0.75rem;
-            font-weight: 700; font-size: 0.75rem;
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
         }
 
-        /* Iframe Overlay */
-        .iframe-overlay {
-            position: fixed; inset: 0; background: var(--bg-primary); z-index: 4000;
-            display: none; flex-direction: column;
-        }
-        .iframe-box { width: 100%; height: 100%; border: none; }
-        .back-btn-overlay {
-            position: absolute; top: 15px; left: 15px; z-index: 4100;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
-            color: white; width: 40px; height: 40px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .theme-modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 100;
+        .btn-premium {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
         }
-        .theme-modal-overlay.active { display: flex; }
-        .theme-modal-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.5rem; width: 90%; max-width: 350px; padding: 1.5rem; }
-        
-        #globalPreloader { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
 
-        @media (max-width: 768px) {
-            #appHeader { padding: 0 12px; }
-            .header-title { font-size: 0.8rem; }
-            main { padding: 1rem; }
+        .btn-premium:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
         }
+
+        #videoModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #videoModal.active { display: flex; }
+
+        .video-container { width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; position: relative; border-radius: 1rem; overflow: hidden; }
+        video { width: 100%; height: 100%; }
+
+        .skeleton { background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--card-border) 50%, var(--bg-secondary) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .nav-link { font-weight: 700; font-size: 0.75rem; letter-spacing: 1px; color: #71717a; transition: color 0.2s; }
+        .nav-link:hover { color: var(--primary); }
+        .nav-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+        #globalPreloader { position: fixed; inset: 0; z-index: 10000; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 10px; }
     </style>
 </head>
 <body class="dark-mode">
-    <div id="iframeContainer" class="iframe-overlay">
-        <button class="back-btn-overlay" onclick="closeIframe()"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></button>
-        <iframe id="studyIframe" class="iframe-box" allow="autoplay; fullscreen; clipboard-write"></iframe>
-    </div>
 
     <div id="globalPreloader">
-        <div class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div class="flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 font-black uppercase tracking-[0.3em] text-[10px] text-gray-500">Initializing Portal</p>
+        </div>
     </div>
 
-    <header id="appHeader">
-        <div class="flex items-center gap-2">
-            <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="header-logo-img" alt="Logo">
-            <div class="header-title" onclick="location.href='/'">RAHUL<span> PREMIUM</span></div>
+    <header id="appHeader" class="fixed top-0 left-0 right-0 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="w-10 h-10 rounded-full border-2 border-primary" alt="Logo">
+            <div class="cursor-pointer" onclick="navigate('batches')">
+                <h1 class="font-black text-xl tracking-tighter">RAHUL <span class="text-indigo-500">PREMIUM</span></h1>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <button onclick="openMissionJeet()" class="header-btn px-4 w-auto text-[10px] font-black uppercase tracking-tighter text-indigo-500">MISSION JEET</button>
-            <button onclick="openNextTopper()" class="header-btn px-4 w-auto text-[10px] font-black uppercase tracking-tighter text-indigo-500">NEXT TOPPER</button>
-            <button id="favToggleBtn" class="header-btn" title="My Batches"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
-            <button id="themeBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg></button>
-            <button id="searchBtn" class="header-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+
+        <nav class="hidden md:flex items-center gap-8">
+            <button onclick="navigate('batches')" class="nav-link uppercase">Batches</button>
+            <button onclick="location.href='/mj/'" class="nav-link uppercase">Mission Jeet</button>
+            <button onclick="location.href='/nt/'" class="nav-link uppercase">Next Topper</button>
+        </nav>
+
+        <div class="flex items-center gap-3">
+            <button id="searchBtn" class="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </button>
+            <button id="themeBtn" class="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            </button>
         </div>
     </header>
 
-    <main id="mainContent">
-        <div id="batchGrid" class="grid"></div>
+    <main class="max-w-7xl mx-auto p-6 min-h-screen">
+        <!-- Dynamic Views -->
+        <div id="viewContainer">
+            <!-- View contents injected by JS -->
+        </div>
     </main>
 
-    <div id="themeModal" class="theme-modal-overlay">
-        <div class="theme-modal-container">
-            <h3 class="text-lg font-bold mb-6 text-center">Appearance</h3>
-            <div class="flex gap-4">
-                <div class="theme-card flex-1 bg-gray-100 text-black rounded-2xl p-6 cursor-pointer text-center font-black text-sm" onclick="applyTheme('light')">LIGHT</div>
-                <div class="theme-card flex-1 bg-gray-900 text-white rounded-2xl p-6 cursor-pointer text-center font-black text-sm border border-white/10" onclick="applyTheme('dark')">DARK</div>
-            </div>
-            <button onclick="document.getElementById('themeModal').classList.remove('active')" class="w-full mt-6 text-gray-500 font-bold text-xs uppercase tracking-widest">Close</button>
+    <!-- Video Modal -->
+    <div id="videoModal">
+        <button class="absolute top-6 right-6 p-4 text-white hover:rotate-90 transition-transform" onclick="closeVideo()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l18 18" /></svg>
+        </button>
+        <div class="video-container shadow-2xl">
+            <video id="hlsPlayer" controls playsinline></video>
+        </div>
+        <div class="mt-8 text-center px-4">
+            <h2 id="videoTitle" class="text-2xl font-black text-white mb-2"></h2>
+            <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">Premium HLS Stream | Secure Delivery</p>
         </div>
     </div>
 
-    <div id="searchModal" class="theme-modal-overlay">
-        <div class="theme-modal-container max-w-2xl w-full mx-4">
-            <div class="flex items-center gap-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-xl mb-4 border border-border-gray">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" id="searchInput" placeholder="Search batches..." class="bg-transparent border-none outline-none w-full text-lg">
-                <button onclick="document.getElementById('searchModal').classList.remove('active')" class="text-gray-400">✕</button>
-            </div>
-            <div id="searchResults" class="max-h-[50vh] overflow-y-auto space-y-2"></div>
+    <!-- Search Overlay -->
+    <div id="searchOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-xl z-[6000] hidden flex-col items-center pt-32 px-6">
+        <div class="w-full max-w-2xl bg-white/5 border border-white/10 rounded-[2.5rem] p-6 flex items-center gap-4 mb-8">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" id="searchInput" placeholder="Search for your batch..." class="bg-transparent border-none outline-none w-full text-xl font-bold text-white">
+            <button onclick="document.getElementById('searchOverlay').style.display='none'" class="text-gray-400">✕</button>
         </div>
+        <div id="searchResults" class="w-full max-w-2xl max-h-[50vh] overflow-y-auto space-y-3 px-4"></div>
     </div>
 
     <script src="app.js"></script>

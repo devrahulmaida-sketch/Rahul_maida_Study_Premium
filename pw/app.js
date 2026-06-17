@@ -1,153 +1,285 @@
 
-let allBatches = [];
-let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
-let currentTheme = localStorage.getItem('theme-mode') || 'dark';
-let displayCount = 60;
-const LOAD_STEP = 40;
-let mode = 'all';
-
-// --- INVISIBLE REDIRECT LOGIC ---
-function openBatch(id, name) {
-    const bName = encodeURIComponent(name).replace(/%20/g, '+');
-    const targetUrl = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
-    
-    container.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    showPreloader(true);
-    
-    iframe.src = targetUrl;
-    iframe.onload = () => showPreloader(false);
-    setTimeout(() => showPreloader(false), 5000);
-}
-
-// --- PORTAL REDIRECTS (MISSION JEET & NEXT TOPPER) ---
-function openMissionJeet() {
-    openIframePortal(`https://eduvibe-mj.pages.dev/`);
-}
-
-function openNextTopper() {
-    openIframePortal(`https://eduvibe-nt.pages.dev/`);
-}
-
-function openIframePortal(url) {
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
-    container.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    showPreloader(true);
-    iframe.src = url;
-    iframe.onload = () => showPreloader(false);
-    setTimeout(() => showPreloader(false), 5000);
-}
-
-function closeIframe() {
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
-    iframe.src = 'about:blank';
-    container.style.display = 'none';
-    document.body.style.overflow = '';
-    renderBatchGrid();
-}
-
-// --- FAVORITES LOGIC ---
-function toggleFav(id) {
-    const idx = favorites.indexOf(id);
-    if (idx > -1) favorites.splice(idx, 1);
-    else favorites.push(id);
-    localStorage.setItem('fav-batches', JSON.stringify(favorites));
-    renderBatchGrid();
-    const btn = document.getElementById('favToggleBtn');
-    btn.classList.add('scale-110');
-    setTimeout(() => btn.classList.remove('scale-110'), 200);
-}
-
-// --- THEME LOGIC ---
-function applyTheme(theme) {
-    currentTheme = theme;
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme-mode', theme);
-    const modal = document.getElementById('themeModal');
-    if (modal) modal.classList.remove('active');
-}
-
-// --- RENDERING ---
-function renderBatchGrid() {
-    const grid = document.getElementById('batchGrid');
-    const list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, displayCount);
-    
-    if (list.length === 0 && mode === 'fav') {
-        grid.innerHTML = `<div class="col-span-full text-center py-32"><div class="text-gray-500 font-black text-xs uppercase tracking-widest opacity-40">No Enrolled Batches</div><button onclick="toggleMode('all')" class="mt-4 text-indigo-500 font-bold text-[10px] uppercase">Browse All</button></div>`;
-        return;
-    }
-
-    grid.innerHTML = list.map(b => {
-        const id = b._id || b.batch_id;
-        const isFav = favorites.includes(id);
-        const img = b.previewImage || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg';
-        return `
-            <div class="card border-white/5 bg-gray-900/40">
-                <button onclick="event.stopPropagation(); toggleFav('${id}')" class="absolute top-3 right-3 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-${isFav ? 'yellow-400' : 'white'} hover:scale-110 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.07 6.223a1 1 0 00.95.69h6.544c.969 0 1.371 1.24.588 1.81l-5.297 3.848a1 1 0 00-.364 1.118l2.07 6.223c.3.921-.755 1.688-1.54 1.118l-5.297-3.848a1 1 0 00-1.175 0l-5.297 3.848c-.784.57-1.838-.197-1.539-1.118l2.07-6.223a1 1 0 00-.364-1.118L2.244 11.65c-.783-.57-.38-1.81.588-1.81h6.544a1 1 0 00.95-.69l2.07-6.223z" /></svg>
-                </button>
-                <div onclick="openBatch('${id}', '${b.name.replace(/'/g,"")}')">
-                    <div class="card-img-wrap h-32 bg-black"><img src="${img}" class="card-img opacity-80" loading="lazy"></div>
-                    <div class="card-content p-4">
-                        <div class="card-title text-sm font-black uppercase text-gray-100">${b.name}</div>
-                    </div>
-                    <div class="px-4 pb-4"><button class="action-btn w-full rounded-xl font-black">ENTER PORTAL</button></div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function toggleMode(newMode) {
-    mode = newMode;
-    const btn = document.getElementById('favToggleBtn');
-    btn.classList.toggle('text-indigo-500', mode === 'fav');
-    renderBatchGrid();
-}
-
-window.onscroll = () => {
-    if (mode === 'fav') return;
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-        if (displayCount < allBatches.length) {
-            displayCount += LOAD_STEP;
-            renderBatchGrid();
-        }
-    }
+const CONFIG = {
+    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev",
+    DEFAULT_IMG: "https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg"
 };
 
-function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
+let state = {
+    view: 'batches',
+    batches: [],
+    favorites: JSON.parse(localStorage.getItem('fav-batches') || '[]'),
+    currentBatch: null,
+    currentSubject: null,
+    currentChapter: null,
+    history: [],
+    displayCount: 60
+};
 
-function handleSearch() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    const results = document.getElementById('searchResults');
-    if (!q) { results.innerHTML = ''; return; }
-    const filtered = allBatches.filter(b => b.name.toLowerCase().includes(q)).slice(0, 15);
-    results.innerHTML = filtered.map(b => `
-        <div class="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg cursor-pointer" onclick="document.getElementById('searchModal').classList.remove('active'); openBatch('${b._id || b.batch_id}', '${b.name.replace(/'/g,"")}')">
-            <img src="${b.previewImage}" class="w-10 h-10 rounded object-cover">
-            <div class="text-white font-bold text-xs uppercase">${b.name}</div>
-        </div>
-    `).join('');
+let hls = null;
+
+// --- CORE NAVIGATION ---
+function navigate(view, data = {}) {
+    console.log("Navigating to:", view, data);
+    state.view = view;
+    Object.assign(state, data);
+    
+    // Update URL hash for "back" support (basic)
+    window.location.hash = view;
+    
+    render();
+    window.scrollTo(0, 0);
 }
 
+// --- API CALLER (PROXY) ---
+async function apiCall(endpoint, method = "GET", body = null) {
+    const url = `${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(endpoint)}`;
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : null
+        });
+        const data = await res.json();
+        if (data.success === false) throw new Error(data.message || "API Error");
+        return data.data || data;
+    } catch (e) {
+        console.error("API Call Failed:", e);
+        throw e;
+    }
+}
+
+// --- RENDERING LOGIC ---
+async function render() {
+    const container = document.getElementById('viewContainer');
+    
+    if (state.view === 'batches') {
+        renderBatches(container);
+    } else if (state.view === 'subjects') {
+        renderSubjects(container);
+    } else if (state.view === 'chapters') {
+        renderChapters(container);
+    } else if (state.view === 'videos') {
+        renderVideos(container);
+    }
+}
+
+function renderBatches(container) {
+    const list = state.batches.slice(0, state.displayCount);
+    container.innerHTML = `
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-3xl font-black tracking-tight">EXPLORE <span class="text-indigo-500">BATCHES</span></h2>
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-widest">${state.batches.length} Available</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            ${list.map(b => `
+                <div class="glass-card group" onclick="navigate('subjects', { currentBatch: '${b._id || b.batch_id}', batchTitle: '${b.name.replace(/'/g,"")}' })">
+                    <div class="h-40 overflow-hidden bg-gray-900">
+                        <img src="${b.previewImage || CONFIG.DEFAULT_IMG}" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 opacity-80">
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-sm h-10 overflow-hidden line-clamp-2 uppercase tracking-tight mb-4">${b.name}</h3>
+                        <button class="btn-premium w-full py-3 rounded-xl text-[10px]">Access Portal</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function renderSubjects(container) {
+    container.innerHTML = renderSkeleton('SUBJECTS');
+    try {
+        // v3 endpoint is usually more robust for details
+        const data = await apiCall(`/v3/batches/${state.currentBatch}/details`);
+        const subjects = data.batchData?.subjects || [];
+        
+        container.innerHTML = `
+            <div class="mb-8">
+                <button onclick="navigate('batches')" class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg> Back to Batches
+                </button>
+                <h2 class="text-3xl font-black tracking-tight uppercase">${state.batchTitle}</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${subjects.map(s => `
+                    <div class="glass-card p-6 flex items-center gap-4 hover:bg-indigo-500/5" onclick="navigate('chapters', { currentSubject: '${s._id}', subjectTitle: '${s.subject.replace(/'/g,"")}' })">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.082.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm uppercase tracking-tight">${s.subject}</h3>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">View Chapters</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (e) {
+        container.innerHTML = renderError("Failed to load subjects. Try again.");
+    }
+}
+
+async function renderChapters(container) {
+    container.innerHTML = renderSkeleton('CHAPTERS');
+    try {
+        const data = await apiCall(`/v2/batches/${state.currentBatch}/subjects/${state.currentSubject}/topics?page=1&limit=50`);
+        const chapters = data || [];
+
+        container.innerHTML = `
+            <div class="mb-8">
+                <button onclick="navigate('subjects')" class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg> Back to Subjects
+                </button>
+                <h2 class="text-3xl font-black tracking-tight uppercase">${state.subjectTitle}</h2>
+            </div>
+            <div class="space-y-3">
+                ${chapters.map(c => `
+                    <div class="glass-card p-5 flex items-center justify-between hover:bg-white/5" onclick="navigate('videos', { currentChapter: '${c._id}', chapterTitle: '${c.name.replace(/'/g,"")}' })">
+                        <div class="flex items-center gap-4">
+                            <div class="text-indigo-500 opacity-40 font-black text-xl italic">${chapters.indexOf(c) + 1}</div>
+                            <h3 class="font-bold text-sm uppercase tracking-tight">${c.name}</h3>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (e) {
+        container.innerHTML = renderError("Failed to load chapters.");
+    }
+}
+
+async function renderVideos(container) {
+    container.innerHTML = renderSkeleton('VIDEOS');
+    try {
+        const data = await apiCall(`/v2/batches/${state.currentBatch}/subjects/${state.currentSubject}/contents?page=1&limit=50&tag=${state.currentChapter}&contentType=video`);
+        const videos = data || [];
+
+        container.innerHTML = `
+            <div class="mb-8">
+                <button onclick="navigate('chapters')" class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg> Back to Chapters
+                </button>
+                <h2 class="text-3xl font-black tracking-tight uppercase">${state.chapterTitle}</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${videos.map(v => {
+                    const url = v.url || v.videoUrl;
+                    const hlsUrl = v.hlsUrl || v.url;
+                    return `
+                        <div class="glass-card group" onclick="playVideo('${hlsUrl}', '${v.name.replace(/'/g,"")}')">
+                            <div class="relative aspect-video bg-black overflow-hidden">
+                                <img src="${CONFIG.DEFAULT_IMG}" class="w-full h-full object-cover opacity-40">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-lg group-hover:scale-125 transition-transform">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-bold text-[11px] uppercase tracking-tight line-clamp-2">${v.name}</h3>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    } catch (e) {
+        container.innerHTML = renderError("Failed to load videos.");
+    }
+}
+
+// --- VIDEO PLAYER ---
+function playVideo(url, title) {
+    console.log("Playing Video:", url);
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('hlsPlayer');
+    document.getElementById('videoTitle').innerText = title;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    if (Hls.isSupported()) {
+        if (hls) hls.destroy();
+        hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(player);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => player.play());
+    } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+        player.src = url;
+        player.addEventListener('loadedmetadata', () => player.play());
+    }
+}
+
+function closeVideo() {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('hlsPlayer');
+    modal.classList.remove('active');
+    player.pause();
+    document.body.style.overflow = '';
+}
+
+// --- DYNAMIC URL DETECTION ---
+function checkDynamicUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const signature = params.get('signature');
+    
+    if (videoUrl) {
+        let fullUrl = videoUrl;
+        if (signature) {
+            fullUrl += (signature.startsWith('?') ? signature : '?' + signature);
+        }
+        console.log("Dynamic URL Detected:", fullUrl);
+        setTimeout(() => playVideo(fullUrl, "External Stream"), 1500);
+    }
+}
+
+// --- UTILS ---
+function renderSkeleton(title) {
+    return `
+        <div class="mb-8">
+            <div class="h-4 w-32 skeleton rounded mb-4"></div>
+            <h2 class="text-3xl font-black tracking-tight uppercase">${title}</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            ${Array(6).fill(0).map(() => `<div class="h-48 glass-card skeleton"></div>`).join('')}
+        </div>
+    `;
+}
+
+function renderError(msg) {
+    return `<div class="flex flex-col items-center justify-center py-20 text-center"><p class="text-red-500 font-bold mb-4">${msg}</p><button onclick="render()" class="btn-premium px-6 py-2 rounded-xl text-xs">Retry</button></div>`;
+}
+
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
-    applyTheme(currentTheme);
     try {
         const res = await fetch('batches.json');
         const data = await res.json();
-        allBatches = data.batches;
-        renderBatchGrid();
-    } catch (e) { console.error("Init failed"); }
-    showPreloader(false);
-
-    document.getElementById('favToggleBtn').onclick = () => toggleMode(mode === 'all' ? 'fav' : 'all');
-    document.getElementById('themeBtn').onclick = () => document.getElementById('themeModal').classList.add('active');
-    document.getElementById('searchBtn').onclick = () => document.getElementById('searchModal').classList.add('active');
-    document.getElementById('searchInput').oninput = handleSearch;
-    window.onclick = (e) => { if (['themeModal','searchModal'].includes(e.target.id)) e.target.classList.remove('active'); };
+        state.batches = data.batches || [];
+        
+        // Initial render
+        navigate('batches');
+        
+        // Check for dynamic URL
+        checkDynamicUrl();
+        
+    } catch (e) { console.error("Initialization failed:", e); }
+    
+    document.getElementById('globalPreloader').style.display = 'none';
+    
+    // Theme and Search handlers
+    document.getElementById('themeBtn').onclick = () => document.body.classList.toggle('dark-mode');
+    document.getElementById('searchBtn').onclick = () => document.getElementById('searchOverlay').style.display = 'flex';
 });
+
+window.onscroll = () => {
+    if (state.view !== 'batches') return;
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
+        if (state.displayCount < state.batches.length) {
+            state.displayCount += 40;
+            render();
+        }
+    }
+};
