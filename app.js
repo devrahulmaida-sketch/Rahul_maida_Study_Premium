@@ -1,153 +1,208 @@
 
 let allBatches = [];
-let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
-let currentTheme = localStorage.getItem('theme-mode') || 'dark';
-let displayCount = 60;
-const LOAD_STEP = 40;
-let mode = 'all';
+let state = {
+    platform: 'pw', // pw, mj, nt
+    view: 'batches', // batches, subjects, topics, contents
+    currentBatch: null,
+    currentSubject: null,
+    currentTopic: null,
+    batchTitle: '',
+    subjectTitle: '',
+    history: [],
+    bearer: null
+};
 
-// --- INVISIBLE REDIRECT LOGIC ---
-function openBatch(id, name) {
-    const bName = encodeURIComponent(name).replace(/%20/g, '+');
-    const targetUrl = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
+const CONFIG = {
+    CLIENT_ID: "5eb393ee95fab7468a79d189",
+    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev"
+};
+
+let hls = null;
+
+// --- PLATFORM SWITCHING ---
+function switchPlatform(id) {
+    state.platform = id;
+    state.view = 'batches';
+    state.history = [];
     
-    container.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    showPreloader(true);
+    // UI Updates
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active-platform', el.dataset.id === id);
+    });
     
-    iframe.src = targetUrl;
-    iframe.onload = () => showPreloader(false);
-    setTimeout(() => showPreloader(false), 5000);
+    document.getElementById('platformLabel').innerText = id.toUpperCase() + " PORTAL";
+    if (window.innerWidth < 1024) toggleSidebar();
+    
+    render();
 }
 
-// --- PORTAL REDIRECTS (MISSION JEET & NEXT TOPPER) ---
-function openMissionJeet() {
-    openIframePortal(`https://eduvibe-mj.pages.dev/`);
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
 }
 
-function openNextTopper() {
-    openIframePortal(`https://eduvibe-nt.pages.dev/`);
+// --- SMART NAVIGATION ---
+function navigate(view, params = {}) {
+    state.history.push({ 
+        view: state.view, 
+        currentBatch: state.currentBatch,
+        currentSubject: state.currentSubject,
+        currentTopic: state.currentTopic,
+        batchTitle: state.batchTitle,
+        subjectTitle: state.subjectTitle
+    });
+    
+    state.view = view;
+    Object.assign(state, params);
+    render();
 }
 
-function openIframePortal(url) {
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
-    container.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    showPreloader(true);
-    iframe.src = url;
-    iframe.onload = () => showPreloader(false);
-    setTimeout(() => showPreloader(false), 5000);
+function goBack() {
+    if (state.history.length > 0) {
+        const prev = state.history.pop();
+        Object.assign(state, prev);
+        render();
+    }
 }
 
-function closeIframe() {
-    const container = document.getElementById('iframeContainer');
-    const iframe = document.getElementById('studyIframe');
-    iframe.src = 'about:blank';
-    container.style.display = 'none';
-    document.body.style.overflow = '';
-    renderBatchGrid();
+// --- API & DATA ---
+async function getFreshToken() {
+    if (state.bearer) return state.bearer;
+    try {
+        const res = await fetch(`${CONFIG.PROXY}/token`);
+        const data = await res.json();
+        state.bearer = data.token;
+        return state.bearer;
+    } catch(e) { return "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3MDM2NTYuMzE1LCJkYXRhIjp7Il9pZCI6IjY5YjRmN2RhMGQyOTk0ZjE3MTliMjBlMCIsInVzZXJuYW1lIjoiODcyNjgzMjk0MiIsImZpcnN0TmFtZSI6Ik5pa2hpbCIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiOFBwa2RRejdRN3VWa0wyNXNtSmJFd182OWI0ZjdkYTBkMjk5NGYxNzE5YjIwZTAiLCJpYXQiOjE3ODEwOTg4NTZ9.5vM0jZUjaeVWr_EwW2bmgdlPXBgcOXVlDAIQ95Y6ezw"; }
 }
 
-// --- FAVORITES LOGIC ---
-function toggleFav(id) {
-    const idx = favorites.indexOf(id);
-    if (idx > -1) favorites.splice(idx, 1);
-    else favorites.push(id);
-    localStorage.setItem('fav-batches', JSON.stringify(favorites));
-    renderBatchGrid();
-    const btn = document.getElementById('favToggleBtn');
-    btn.classList.add('scale-110');
-    setTimeout(() => btn.classList.remove('scale-110'), 200);
-}
-
-// --- THEME LOGIC ---
-function applyTheme(theme) {
-    currentTheme = theme;
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme-mode', theme);
-    const modal = document.getElementById('themeModal');
-    if (modal) modal.classList.remove('active');
+async function apiCall(endpoint) {
+    const token = await getFreshToken();
+    const res = await fetch(`${CONFIG.PROXY}/proxy?endpoint=${encodeURIComponent(endpoint)}&token=${token}`);
+    return await res.json();
 }
 
 // --- RENDERING ---
-function renderBatchGrid() {
-    const grid = document.getElementById('batchGrid');
-    const list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, displayCount);
-    
-    if (list.length === 0 && mode === 'fav') {
-        grid.innerHTML = `<div class="col-span-full text-center py-32"><div class="text-gray-500 font-black text-xs uppercase tracking-widest opacity-40">No Enrolled Batches</div><button onclick="toggleMode('all')" class="mt-4 text-indigo-500 font-bold text-[10px] uppercase">Browse All</button></div>`;
+async function render() {
+    const container = document.getElementById('portalContainer');
+    const backBtn = document.getElementById('masterBackBtn');
+    backBtn.classList.toggle('hidden', state.history.length === 0);
+
+    if (state.platform === 'mj') {
+        container.innerHTML = `<iframe src="https://eduvibe-mj.pages.dev/"></iframe>`;
+        return;
+    }
+    if (state.platform === 'nt') {
+        container.innerHTML = `<iframe src="https://eduvibe-nt.pages.dev/"></iframe>`;
         return;
     }
 
-    grid.innerHTML = list.map(b => {
-        const id = b._id || b.batch_id;
-        const isFav = favorites.includes(id);
-        const img = b.previewImage || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg';
-        return `
-            <div class="card border-white/5 bg-gray-900/40">
-                <button onclick="event.stopPropagation(); toggleFav('${id}')" class="absolute top-3 right-3 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-${isFav ? 'yellow-400' : 'white'} hover:scale-110 transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l2.07 6.223a1 1 0 00.95.69h6.544c.969 0 1.371 1.24.588 1.81l-5.297 3.848a1 1 0 00-.364 1.118l2.07 6.223c.3.921-.755 1.688-1.54 1.118l-5.297-3.848a1 1 0 00-1.175 0l-5.297 3.848c-.784.57-1.838-.197-1.539-1.118l2.07-6.223a1 1 0 00-.364-1.118L2.244 11.65c-.783-.57-.38-1.81.588-1.81h6.544a1 1 0 00.95-.69l2.07-6.223z" /></svg>
-                </button>
-                <div onclick="openBatch('${id}', '${b.name.replace(/'/g,"")}')">
-                    <div class="card-img-wrap h-32 bg-black"><img src="${img}" class="card-img opacity-80" loading="lazy"></div>
-                    <div class="card-content p-4">
-                        <div class="card-title text-sm font-black uppercase text-gray-100">${b.name}</div>
+    showPreloader(true);
+    try {
+        if (state.view === 'batches') {
+            renderBatchGrid(container);
+        } 
+        else if (state.view === 'subjects') {
+            const data = await apiCall(`/v3/batches/${state.currentBatch}/details`);
+            const subjects = data.data?.subjects || [];
+            container.innerHTML = `<div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-500">${subjects.map(s => `
+                <div class="group bg-sidebar-bg border border-white/5 rounded-3xl overflow-hidden hover:border-indigo-500/50 transition-all cursor-pointer" onclick="navigate('topics', { currentSubject: '${s._id}', subjectTitle: '${s.subject}' })">
+                    <div class="h-40 bg-black overflow-hidden relative"><img src="${s.imageId || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500"><div class="absolute inset-0 bg-gradient-to-t from-sidebar-bg to-transparent opacity-60"></div></div>
+                    <div class="p-5">
+                        <div class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">Explore</div>
+                        <h3 class="font-bold text-sm text-gray-100">${s.subject}</h3>
                     </div>
-                    <div class="px-4 pb-4"><button class="action-btn w-full rounded-xl font-black">ENTER PORTAL</button></div>
+                </div>
+            `).join('')}</div>`;
+        }
+        else if (state.view === 'topics') {
+            const data = await apiCall(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?contentType=videos&page=1`);
+            const items = data.data || [];
+            const tags = {};
+            items.forEach(item => item.tags.forEach(t => tags[t._id] = t.name));
+
+            container.innerHTML = `<div class="max-w-4xl mx-auto p-6 space-y-3 animate-in slide-in-from-bottom-4 duration-500">${Object.entries(tags).map(([id, name]) => `
+                <div class="flex items-center justify-between p-5 bg-white/5 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all cursor-pointer group" onclick="navigate('contents', { currentTopic: '${id}', topicTitle: '${name}' })">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-black text-xs">${name.substring(0,1).toUpperCase()}</div>
+                        <span class="font-black text-xs text-gray-200 tracking-tight">${name}</span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600 group-hover:text-indigo-500 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </div>
+            `).join('')}</div>`;
+        }
+        else if (state.view === 'contents') {
+            const data = await apiCall(`/v2/batches/${state.currentBatch}/subject/${state.currentSubject}/contents?tag=${state.currentTopic}&contentType=videos&page=1`);
+            const items = data.data || [];
+            container.innerHTML = `<div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">${items.map(v => `
+                <div class="bg-sidebar-bg border border-white/5 rounded-3xl overflow-hidden hover:border-indigo-500/50 transition-all cursor-pointer group" onclick="playVideo('${v.videoDetails?.videoUrl}', '${v.topic}')">
+                    <div class="h-44 bg-black relative">
+                        <img src="${v.videoDetails?.image || 'https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg'}" class="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center shadow-2xl pl-1 group-hover:scale-110 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></div></div>
+                    </div>
+                    <div class="p-5"><h3 class="font-bold text-[11px] text-gray-300 leading-relaxed line-clamp-2">${v.topic}</h3></div>
+                </div>
+            `).join('')}</div>`;
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center px-6"><div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-6"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div><h2 class="text-lg font-black mb-2">Portal Access Restricted</h2><button onclick="state.bearer=null;render();" class="px-8 py-3 bg-indigo-500 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-500/20 mt-4">Refresh Key</button></div>`;
+    } finally {
+        showPreloader(false);
+    }
+}
+
+function renderBatchGrid(container) {
+    container.innerHTML = `<div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in zoom-in-95 duration-500">${allBatches.slice(0, 100).map(b => {
+        const id = b._id || b.batch_id;
+        return `
+            <div class="bg-sidebar-bg border border-white/5 rounded-[2rem] overflow-hidden hover:border-indigo-500/30 transition-all cursor-pointer group" onclick="navigate('subjects', { currentBatch: '${id}', batchTitle: '${b.name.replace(/'/g,"")}' })">
+                <div class="h-32 bg-black overflow-hidden relative">
+                    <img src="${b.previewImage}" class="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-sidebar-bg to-transparent opacity-60"></div>
+                </div>
+                <div class="p-5">
+                    <h3 class="font-black text-[10px] text-gray-300 uppercase tracking-tight line-clamp-1 mb-4">${b.name}</h3>
+                    <button class="w-full py-2.5 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest group-hover:bg-indigo-500 transition-colors">Launch Batch</button>
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('')}</div>`;
 }
 
-function toggleMode(newMode) {
-    mode = newMode;
-    const btn = document.getElementById('favToggleBtn');
-    btn.classList.toggle('text-indigo-500', mode === 'fav');
-    renderBatchGrid();
-}
+// --- VIDEO PLAYER ---
+function playVideo(url, title) {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.className = "w-full h-full rounded-2xl shadow-2xl";
+    const modal = document.createElement('div');
+    modal.className = "fixed inset-0 z-[10000] bg-black/98 flex flex-col items-center justify-center p-4 animate-in fade-in duration-300";
+    modal.innerHTML = `<div class="w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl" id="playerWrap"></div><div class="mt-8 text-center"><h2 class="text-lg font-black">${title}</h2><button onclick="this.parentElement.parentElement.remove()" class="mt-6 px-10 py-3 bg-white/5 border border-white/10 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all">Close Player</button></div>`;
+    document.body.appendChild(modal);
+    
+    const playerWrap = modal.querySelector('#playerWrap');
+    playerWrap.appendChild(video);
 
-window.onscroll = () => {
-    if (mode === 'fav') return;
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-        if (displayCount < allBatches.length) {
-            displayCount += LOAD_STEP;
-            renderBatchGrid();
-        }
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else {
+        video.src = url;
+        video.play();
     }
-};
-
-function showPreloader(show) { document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none'; }
-
-function handleSearch() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    const results = document.getElementById('searchResults');
-    if (!q) { results.innerHTML = ''; return; }
-    const filtered = allBatches.filter(b => b.name.toLowerCase().includes(q)).slice(0, 15);
-    results.innerHTML = filtered.map(b => `
-        <div class="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg cursor-pointer" onclick="document.getElementById('searchModal').classList.remove('active'); openBatch('${b._id || b.batch_id}', '${b.name.replace(/'/g,"")}')">
-            <img src="${b.previewImage}" class="w-10 h-10 rounded object-cover">
-            <div class="text-white font-bold text-xs uppercase">${b.name}</div>
-        </div>
-    `).join('');
 }
 
+function showPreloader(show) {
+    document.getElementById('globalPreloader').style.display = show ? 'flex' : 'none';
+}
+
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', async () => {
-    applyTheme(currentTheme);
     try {
         const res = await fetch('batches.json');
         const data = await res.json();
         allBatches = data.batches;
-        renderBatchGrid();
+        render();
     } catch (e) { console.error("Init failed"); }
-    showPreloader(false);
-
-    document.getElementById('favToggleBtn').onclick = () => toggleMode(mode === 'all' ? 'fav' : 'all');
-    document.getElementById('themeBtn').onclick = () => document.getElementById('themeModal').classList.add('active');
-    document.getElementById('searchBtn').onclick = () => document.getElementById('searchModal').classList.add('active');
-    document.getElementById('searchInput').oninput = handleSearch;
-    window.onclick = (e) => { if (['themeModal','searchModal'].includes(e.target.id)) e.target.classList.remove('active'); };
 });
