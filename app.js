@@ -46,7 +46,6 @@ function handlePortalOpen(url, isDirectPlatform = false, hashData = null) {
     const frame = document.getElementById('portalFrame');
     
     if (!hashData) {
-        // Professional History Logic
         history.pushState({ portalOpen: true }, '');
     }
     
@@ -65,7 +64,6 @@ function forceClosePortal() {
     portal.classList.remove('active');
     closeJoinPopup();
     
-    // Reset hash if it was a batch
     if (window.location.hash.includes('batch/')) {
         window.location.hash = currentCategory;
     }
@@ -87,8 +85,8 @@ function handleSmartBack() {
 
 function handleBatchClick(id, name) {
     const bName = encodeURIComponent(name).replace(/%20/g, '+');
-    // Switching back to Delta Study (study-v2) for better token stability
-    const url = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
+    // RESTORED RARESTUDY PER USER REQUEST
+    const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
     
     window.location.hash = `pw/batch/${id}/${bName}`;
     handlePortalOpen(url);
@@ -106,7 +104,7 @@ function loadStateFromHash() {
         const parts = hash.split('/');
         const id = parts[2];
         const bName = parts[3];
-        const url = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
+        const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
         currentCategory = 'pw';
         handlePortalOpen(url, false, true);
     } else if (hash === 'mj') {
