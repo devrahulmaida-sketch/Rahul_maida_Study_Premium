@@ -16,7 +16,7 @@ function toggleSidebar() {
     document.getElementById('overlay').classList.toggle('open');
 }
 
-function switchCategory(cat) {
+function switchCategory(cat, skipHash = false) {
     currentCategory = cat;
     mode = 'all';
     displayCount = 60; 
@@ -30,18 +30,32 @@ function switchCategory(cat) {
     
     if (window.innerWidth < 1024) toggleSidebar();
     
-    if (cat === 'mj') handlePortalOpen('https://eduvibe-mj.pages.dev/');
-    else if (cat === 'nt') handlePortalOpen('https://eduvibe-nt.pages.dev/');
-    else renderGrid(true);
+    if (!skipHash) window.location.hash = cat;
+
+    if (cat === 'mj') handlePortalOpen('https://eduvibe-mj.pages.dev/', true);
+    else if (cat === 'nt') handlePortalOpen('https://eduvibe-nt.pages.dev/', true);
+    else {
+        closePortal(true);
+        renderGrid(true);
+    }
 }
 
-// --- PORTAL (SMART HISTORY REDIRECT) ---
-function handlePortalOpen(url) {
+// --- PORTAL (SMART HISTORY & REFRESH PERSISTENCE) ---
+function handlePortalOpen(url, isDirectPlatform = false, hashData = null) {
     const portal = document.getElementById('iframePortal');
     const frame = document.getElementById('portalFrame');
-    history.pushState({ portalOpen: true }, '');
+    
+    if (!hashData) {
+        // Professional History Logic
+        history.pushState({ portalOpen: true }, '');
+    }
+    
     frame.src = url;
     portal.classList.add('active');
+    
+    if (!localStorage.getItem('joined_community')) {
+        setTimeout(showJoinPopup, 4000);
+    }
 }
 
 function forceClosePortal() {
@@ -49,7 +63,22 @@ function forceClosePortal() {
     const frame = document.getElementById('portalFrame');
     frame.src = 'about:blank';
     portal.classList.remove('active');
+    closeJoinPopup();
+    
+    // Reset hash if it was a batch
+    if (window.location.hash.includes('batch/')) {
+        window.location.hash = currentCategory;
+    }
+    
     if (currentCategory !== 'pw') switchCategory('pw');
+}
+
+function closePortal(internal = false) {
+    const portal = document.getElementById('iframePortal');
+    const frame = document.getElementById('portalFrame');
+    frame.src = 'about:blank';
+    portal.classList.remove('active');
+    if (!internal) window.location.hash = currentCategory;
 }
 
 function handleSmartBack() {
@@ -58,26 +87,43 @@ function handleSmartBack() {
 
 function handleBatchClick(id, name) {
     const bName = encodeURIComponent(name).replace(/%20/g, '+');
-    const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
+    // Switching back to Delta Study (study-v2) for better token stability
+    const url = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
+    
+    window.location.hash = `pw/batch/${id}/${bName}`;
     handlePortalOpen(url);
 }
 
-// --- POPUP SYSTEM (Front-page, First-time, 24h Mute) ---
-function checkAndShowPopup() {
-    if (localStorage.getItem('joined_community')) return;
-    
-    const mutedUntil = localStorage.getItem('popup_muted_until');
-    if (mutedUntil && Date.now() < parseInt(mutedUntil)) return;
+// --- HASH ROUTING LOGIC (REFRESH PERSISTENCE) ---
+function loadStateFromHash() {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) {
+        switchCategory('pw', true);
+        return;
+    }
 
-    // Show after 4 seconds on front page
-    setTimeout(showJoinPopup, 4000);
+    if (hash.startsWith('pw/batch/')) {
+        const parts = hash.split('/');
+        const id = parts[2];
+        const bName = parts[3];
+        const url = `https://deltastudy.site/study-v2/batches/${id}?name=${bName}`;
+        currentCategory = 'pw';
+        handlePortalOpen(url, false, true);
+    } else if (hash === 'mj') {
+        switchCategory('mj', true);
+    } else if (hash === 'nt') {
+        switchCategory('nt', true);
+    } else {
+        switchCategory('pw', true);
+    }
 }
 
+// --- POPUP SYSTEM ---
 function showJoinPopup() {
     if (document.getElementById('communityPopup') || currentCategory !== 'pw') return;
     const popup = document.createElement('div');
     popup.id = 'communityPopup';
-    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300";
+    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300";
     popup.innerHTML = `
         <div class="bg-[#111114] border border-white/10 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-500">
             <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
@@ -114,7 +160,7 @@ function mutePopup24h() {
     closeJoinPopup();
 }
 
-// --- RENDERING & INFINITE SCROLL ---
+// --- RENDERING ---
 function renderGrid(resetScroll = false) {
     const grid = document.getElementById('gridContainer');
     const mainScroll = document.getElementById('mainScroll');
@@ -191,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch('batches.json');
         const data = await res.json();
         allBatches = data.batches;
-        renderGrid(true);
+        loadStateFromHash();
         checkAndShowPopup();
     } catch (e) { console.error("Init Error"); }
     
