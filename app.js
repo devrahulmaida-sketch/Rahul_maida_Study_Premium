@@ -19,7 +19,7 @@ function toggleSidebar() {
 function switchCategory(cat) {
     currentCategory = cat;
     mode = 'all';
-    displayCount = 60; // Reset pagination
+    displayCount = 60; 
     
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active-nav', btn.dataset.cat === cat);
@@ -39,15 +39,9 @@ function switchCategory(cat) {
 function handlePortalOpen(url) {
     const portal = document.getElementById('iframePortal');
     const frame = document.getElementById('portalFrame');
-    
     history.pushState({ portalOpen: true }, '');
-    
     frame.src = url;
     portal.classList.add('active');
-    
-    if (!localStorage.getItem('joined_community')) {
-        setTimeout(showJoinPopup, 3000);
-    }
 }
 
 function forceClosePortal() {
@@ -55,7 +49,6 @@ function forceClosePortal() {
     const frame = document.getElementById('portalFrame');
     frame.src = 'about:blank';
     portal.classList.remove('active');
-    closeJoinPopup();
     if (currentCategory !== 'pw') switchCategory('pw');
 }
 
@@ -69,22 +62,35 @@ function handleBatchClick(id, name) {
     handlePortalOpen(url);
 }
 
-// --- POPUP SYSTEM ---
+// --- POPUP SYSTEM (Front-page, First-time, 24h Mute) ---
+function checkAndShowPopup() {
+    if (localStorage.getItem('joined_community')) return;
+    
+    const mutedUntil = localStorage.getItem('popup_muted_until');
+    if (mutedUntil && Date.now() < parseInt(mutedUntil)) return;
+
+    // Show after 4 seconds on front page
+    setTimeout(showJoinPopup, 4000);
+}
+
 function showJoinPopup() {
-    if (document.getElementById('communityPopup')) return;
+    if (document.getElementById('communityPopup') || currentCategory !== 'pw') return;
     const popup = document.createElement('div');
     popup.id = 'communityPopup';
-    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300";
+    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300";
     popup.innerHTML = `
         <div class="bg-[#111114] border border-white/10 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-500">
             <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.185-.573c.948.527 1.927.817 3.141.817 3.181 0 5.767-2.587 5.768-5.766 0-3.181-2.587-5.768-5.766-5.768zm3.391 8.247c-.146.415-.852.797-1.157.846-.305.048-.682.08-2.116-.512-1.71-.713-2.807-2.448-2.891-2.56-.085-.113-.691-.921-.691-1.756 0-.835.439-1.246.596-1.411.158-.165.341-.205.454-.205s.227 0 .326.005c.106.005.25.039.39.39.141.35.484 1.179.527 1.265.042.085.07.184.013.298-.057.113-.085.184-.171.283-.085.1-.184.223-.263.303-.095.094-.194.195-.084.364.111.168.49 1.103.733 1.341.312.304.577.34.733.415.158.077.25.066.341-.039.091-.106.39-.454.496-.61.106-.156.213-.131.36-.073.146.057.927.437 1.086.516.159.079.265.118.305.186.04.068.04.394-.106.809z"/></svg>
             </div>
-            <h3 class="text-xl font-black text-white mb-2 italic">Official Channel</h3>
-            <p class="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">Join for Premium Support</p>
+            <h3 class="text-xl font-black text-white mb-2 italic uppercase tracking-tighter">Join Community</h3>
+            <p class="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-8 leading-loose">Get latest batch updates & premium support instantly</p>
             <div class="space-y-3">
                 <button onclick="joinCommunity()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-600/20 transition-all">Join Now</button>
-                <button onclick="closeJoinPopup()" class="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">Later</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="mutePopup24h()" class="py-3 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all">Mute 24h</button>
+                    <button onclick="closeJoinPopup()" class="py-3 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all">Later</button>
+                </div>
             </div>
         </div>
     `;
@@ -99,6 +105,12 @@ function closeJoinPopup() {
 function joinCommunity() {
     window.open("https://whatsapp.com/channel/0029Vb86VfU8V0tmM9KqqT2c", "_blank");
     localStorage.setItem('joined_community', 'true');
+    closeJoinPopup();
+}
+
+function mutePopup24h() {
+    const tomorrow = Date.now() + (24 * 60 * 60 * 1000);
+    localStorage.setItem('popup_muted_until', tomorrow.toString());
     closeJoinPopup();
 }
 
@@ -139,7 +151,6 @@ function renderGrid(resetScroll = false) {
     }).join('');
 }
 
-// Global Scroll Listener for Infinite Scroll
 document.getElementById('mainScroll').onscroll = (e) => {
     if (mode === 'fav' || currentCategory !== 'pw') return;
     const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -181,6 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await res.json();
         allBatches = data.batches;
         renderGrid(true);
+        checkAndShowPopup();
     } catch (e) { console.error("Init Error"); }
     
     document.getElementById('searchInput').oninput = handleSearch;
