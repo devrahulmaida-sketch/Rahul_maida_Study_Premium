@@ -2,123 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rahul Maida | Premium Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#6366f1',
-                        'dark-bg': '#09090b',
-                        'sidebar-bg': '#111114',
-                        'border-white': 'rgba(255, 255, 255, 0.05)'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { background: #09090b; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; height: 100vh; }
-        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass { background: rgba(24, 24, 27, 0.4); backdrop-filter: blur(12px); border: 1px solid var(--border-white); }
-        .active-platform { background: rgba(99, 102, 241, 0.1) !important; color: #6366f1 !important; border-left: 4px solid #6366f1; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .portal-container { height: calc(100vh - 64px); width: 100%; }
-        
-        /* Sidebar Styles */
-        #sidebar { z-index: 100; }
-        #overlay { z-index: 90; display: none; }
-        
-        @media (max-width: 1024px) {
-            #sidebar { transform: translateX(-100%); }
-            #sidebar.open { transform: translateX(0); }
-            #overlay.open { display: block; }
+        :root {
+            --primary: #6366f1;
+            --sidebar-bg: #111114;
+            --main-bg: #09090b;
         }
 
-        .back-btn-anim { transition: transform 0.2s; }
-        .back-btn-anim:active { transform: scale(0.9); }
+        body { 
+            background: var(--main-bg); 
+            color: #fff; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Fullscreen Layout */
+        #appContainer { height: 100vh; width: 100vw; display: flex; flex-direction: column; }
+        #mainContent { flex: 1; overflow-y: auto; position: relative; }
+
+        /* Sidebar Overlay Logic */
+        #sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; width: 300px;
+            background: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05);
+            z-index: 2000; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+        }
+        #sidebar.open { transform: translateX(0); }
         
+        #overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px); z-index: 1900; display: none;
+        }
+        #overlay.open { display: block; }
+
+        /* Iframe Portal Layer */
+        .iframe-container {
+            position: fixed; inset: 0; background: var(--main-bg); z-index: 3000;
+            display: none; flex-direction: column;
+        }
+        .iframe-container.active { display: flex; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .back-btn-float {
+            position: fixed; top: 15px; left: 15px; z-index: 3100;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+            color: #6366f1; width: 42px; height: 42px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+        .back-btn-float:active { transform: scale(0.9); }
+
+        /* Premium Card */
+        .premium-card {
+            background: rgba(24, 24, 27, 0.6); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 1.5rem; overflow: hidden; transition: all 0.3s;
+            cursor: pointer; display: flex; flex-direction: column;
+        }
+        .premium-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+        .card-thumb { height: 160px; background: #000; overflow: hidden; position: relative; }
+        .card-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        .card-body { padding: 1.25rem; flex: 1; }
+
+        .active-nav { background: rgba(99, 102, 241, 0.1); color: var(--primary); border-left: 4px solid var(--primary); }
+
+        .glass-header { background: rgba(15, 15, 18, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
-<body class="flex flex-col">
+<body>
 
-    <!-- Global Preloader -->
-    <div id="globalPreloader" class="fixed inset-0 z-[10000] bg-[#09090b] flex flex-col items-center justify-center">
-        <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+    <!-- Portal Iframe Overlay -->
+    <div id="iframePortal" class="iframe-container">
+        <button class="back-btn-float" onclick="closePortal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+        <iframe id="portalFrame" allow="autoplay; fullscreen; clipboard-write"></iframe>
     </div>
 
-    <!-- Mobile Overlay -->
-    <div id="overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleSidebar()"></div>
-
-    <!-- Header -->
-    <header class="h-16 glass flex items-center justify-between px-4 z-[110]">
-        <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar()" class="p-2 hover:bg-white/5 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <button id="masterBackBtn" class="p-2 hover:bg-white/5 rounded-xl hidden back-btn-anim" onclick="goBack()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <div class="flex items-center gap-2">
-                <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="w-8 h-8 rounded-full border border-indigo-500" alt="Logo">
-                <h1 class="text-sm font-black tracking-tighter uppercase italic hidden sm:block">RAHUL <span class="text-indigo-500">PREMIUM</span></h1>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <span id="platformLabel" class="text-[10px] font-black uppercase tracking-widest text-gray-500 mr-2">PW PORTAL</span>
-            <button id="searchTrigger" class="p-2.5 bg-white/5 rounded-xl hover:bg-indigo-500/10 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
-        </div>
-    </header>
-
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="w-72 bg-sidebar-bg border-r border-white/5 flex flex-col fixed inset-y-0 left-0 lg:static sidebar-transition">
-            <div class="p-6">
-                <p class="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mb-8">Navigation</p>
-                <nav class="space-y-2">
-                    <button onclick="switchPlatform('pw')" class="nav-item w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5 transition-all active-platform" data-id="pw">
-                        <span class="text-lg">⚡</span> PW PORTAL
-                    </button>
-                    <button onclick="switchPlatform('mj')" class="nav-item w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5 transition-all" data-id="mj">
-                        <span class="text-lg">🎯</span> MISSION JEET
-                    </button>
-                    <button onclick="switchPlatform('nt')" class="nav-item w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5 transition-all" data-id="nt">
-                        <span class="text-lg">🏆</span> NEXT TOPPER
-                    </button>
-                </nav>
+    <!-- Sidebar & Overlay -->
+    <div id="overlay" onclick="toggleSidebar()"></div>
+    <aside id="sidebar">
+        <div class="p-8">
+            <div class="flex items-center gap-3 mb-12">
+                <img src="https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg" class="w-12 h-12 rounded-full border-2 border-indigo-500 shadow-2xl">
+                <div><h1 class="text-sm font-black italic tracking-tighter">RAHUL <span class="text-indigo-500">PREMIUM</span></h1><p class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Global Study Hub</p></div>
             </div>
             
-            <div class="mt-auto p-6 border-t border-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">System Online</span>
-                </div>
-            </div>
-        </aside>
+            <p class="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mb-6">Platforms</p>
+            <nav class="space-y-2">
+                <button onclick="switchCategory('pw')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5 active-nav" data-cat="pw"><span>⚡</span> PW PORTAL</button>
+                <button onclick="switchCategory('mj')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5" data-cat="mj"><span>🎯</span> MISSION JEET</button>
+                <button onclick="switchCategory('nt')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl font-bold text-sm text-gray-400 hover:bg-white/5" data-cat="nt"><span>🏆</span> NEXT TOPPER</button>
+            </nav>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-8 border-t border-white/5 flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Server Secure</span>
+        </div>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 relative">
-            <div id="portalContainer" class="portal-container overflow-y-auto">
-                <!-- Content injected here -->
+    <div id="appContainer">
+        <!-- Header -->
+        <header class="h-16 glass-header flex items-center justify-between px-6 z-[100]">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-white/5 rounded-xl text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+                <div class="h-6 w-[1px] bg-white/10"></div>
+                <h2 id="viewTitle" class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500">All Batches</h2>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSearch()" class="p-2.5 bg-white/5 rounded-xl hover:bg-indigo-500/10 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                <button id="heartBtn" class="p-2.5 bg-white/5 rounded-xl hover:bg-red-500/10 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
+            </div>
+        </header>
+
+        <!-- Main View -->
+        <main id="mainContent">
+            <div id="gridContainer" class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <!-- Batches will be here -->
             </div>
         </main>
     </div>
 
-    <!-- Search Overlay -->
-    <div id="searchOverlay" class="fixed inset-0 bg-[#09090b]/95 backdrop-blur-2xl z-[200] hidden flex-col items-center pt-24 px-6">
-        <div class="w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl p-5 flex items-center gap-4 mb-6">
+    <!-- Search UI -->
+    <div id="searchOverlay" class="fixed inset-0 bg-[#09090b]/98 z-[5000] hidden flex-col items-center pt-24 px-6">
+        <div class="w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl p-5 flex items-center gap-4 mb-8">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input type="text" id="searchInput" placeholder="Search premium batches..." class="bg-transparent border-none outline-none w-full text-lg font-bold">
-            <button onclick="closeSearch()" class="text-gray-500 hover:text-white">✕</button>
+            <input type="text" id="searchInput" placeholder="Search batches..." class="bg-transparent border-none outline-none w-full text-xl font-bold">
+            <button onclick="toggleSearch()" class="text-gray-500 hover:text-white">✕</button>
         </div>
-        <div id="searchResults" class="w-full max-w-2xl max-h-[60vh] overflow-y-auto space-y-2 px-2"></div>
+        <div id="searchResults" class="w-full max-w-2xl max-h-[60vh] overflow-y-auto space-y-2"></div>
     </div>
 
     <script src="app.js"></script>
