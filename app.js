@@ -35,28 +35,26 @@ function handlePortalOpen(url) {
     const portal = document.getElementById('iframePortal');
     const frame = document.getElementById('portalFrame');
     
-    // Professional History Logic
     history.pushState({ portalOpen: true }, '');
     
     frame.src = url;
     portal.classList.add('active');
+    
+    // Show Community Popup on first entry
+    if (!localStorage.getItem('joined_community')) {
+        setTimeout(showJoinPopup, 3000);
+    }
 }
 
-// This function now only handles the visual closing
 function forceClosePortal() {
     const portal = document.getElementById('iframePortal');
     const frame = document.getElementById('portalFrame');
     frame.src = 'about:blank';
     portal.classList.remove('active');
-    if (currentCategory !== 'pw') {
-        currentCategory = 'pw';
-        renderGrid();
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active-nav', btn.dataset.cat === 'pw'));
-        document.getElementById('viewTitle').innerText = 'PW PORTAL';
-    }
+    closeJoinPopup();
+    if (currentCategory !== 'pw') switchCategory('pw');
 }
 
-// Floating button now uses browser back to respect internal iframe history
 function handleSmartBack() {
     window.history.back();
 }
@@ -65,6 +63,39 @@ function handleBatchClick(id, name) {
     const bName = encodeURIComponent(name).replace(/%20/g, '+');
     const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
     handlePortalOpen(url);
+}
+
+// --- POPUP SYSTEM ---
+function showJoinPopup() {
+    if (document.getElementById('communityPopup')) return;
+    const popup = document.createElement('div');
+    popup.id = 'communityPopup';
+    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300";
+    popup.innerHTML = `
+        <div class="bg-[#111114] border border-white/10 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-500">
+            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.185-.573c.948.527 1.927.817 3.141.817 3.181 0 5.767-2.587 5.768-5.766 0-3.181-2.587-5.768-5.766-5.768zm3.391 8.247c-.146.415-.852.797-1.157.846-.305.048-.682.08-2.116-.512-1.71-.713-2.807-2.448-2.891-2.56-.085-.113-.691-.921-.691-1.756 0-.835.439-1.246.596-1.411.158-.165.341-.205.454-.205s.227 0 .326.005c.106.005.25.039.39.39.141.35.484 1.179.527 1.265.042.085.07.184.013.298-.057.113-.085.184-.171.283-.085.1-.184.223-.263.303-.095.094-.194.195-.084.364.111.168.49 1.103.733 1.341.312.304.577.34.733.415.158.077.25.066.341-.039.091-.106.39-.454.496-.61.106-.156.213-.131.36-.073.146.057.927.437 1.086.516.159.079.265.118.305.186.04.068.04.394-.106.809z"/></svg>
+            </div>
+            <h3 class="text-xl font-black text-white mb-2 italic">Official Channel</h3>
+            <p class="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">Join for Premium Support</p>
+            <div class="space-y-3">
+                <button onclick="joinCommunity()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-600/20 transition-all">Join Now</button>
+                <button onclick="closeJoinPopup()" class="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">Later</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(popup);
+}
+
+function closeJoinPopup() {
+    const el = document.getElementById('communityPopup');
+    if (el) el.remove();
+}
+
+function joinCommunity() {
+    window.open("https://whatsapp.com/channel/0029Vb86VfU8V0tmM9KqqT2c", "_blank");
+    localStorage.setItem('joined_community', 'true');
+    closeJoinPopup();
 }
 
 // --- RENDERING ---
@@ -78,7 +109,7 @@ function renderGrid() {
     let list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, 100);
     
     if (list.length === 0 && mode === 'fav') {
-        grid.innerHTML = `<div class="col-span-full text-center py-40 opacity-40 font-black uppercase text-xs tracking-widest">No Enrolled Batches</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-40 opacity-40 font-black uppercase text-xs tracking-widest">No Favorites Yet</div>`;
         return;
     }
 
@@ -94,7 +125,6 @@ function renderGrid() {
                     <button onclick="event.stopPropagation(); toggleFav('${id}')" class="absolute top-3 right-3 z-10 p-2.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-${isFav ? 'yellow-400' : 'gray-400'} active:scale-90 transition-all">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                     </button>
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] to-transparent opacity-40"></div>
                 </div>
                 <div class="card-body">
                     <h3 class="text-[10px] font-black text-gray-200 uppercase tracking-tight line-clamp-1 mb-3">${b.name}</h3>
@@ -105,7 +135,6 @@ function renderGrid() {
     }).join('');
 }
 
-// --- FEATURES ---
 function toggleFav(id) {
     if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
     else favorites.push(id);
@@ -123,14 +152,13 @@ function handleSearch() {
     
     const matches = allBatches.filter(b => b.name.toLowerCase().includes(q)).slice(0, 15);
     resEl.innerHTML = matches.map(b => `
-        <div onclick="closeSearch(); handleBatchClick('${b._id || b.batch_id}', '${b.name.replace(/'/g,"")}')" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:border-indigo-500/50 transition-all">
+        <div onclick="closeSearch(); handleBatchClick('${b._id || b.batch_id}', '${b.name.replace(/'/g,"")}')" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer">
             <img src="${b.previewImage || FALLBACK_LOGO}" class="w-10 h-10 rounded-lg object-cover">
             <div class="text-xs font-black uppercase text-white">${b.name}</div>
         </div>
     `).join('');
 }
 
-// --- INIT & HISTORY LISTENER ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const res = await fetch('batches.json');
@@ -146,10 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderGrid();
     };
 
-    // SMART POPSTATE LISTENER
     window.addEventListener('popstate', (event) => {
-        if (!event.state || !event.state.portalOpen) {
-            forceClosePortal();
-        }
+        if (!event.state || !event.state.portalOpen) forceClosePortal();
     });
 });
