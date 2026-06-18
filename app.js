@@ -4,6 +4,10 @@ let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
 let currentCategory = 'pw'; 
 let mode = 'all'; 
 
+// Pagination State
+let displayCount = 60;
+const LOAD_STEP = 40;
+
 const FALLBACK_LOGO = "https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg";
 
 // --- NAVIGATION & SIDEBAR ---
@@ -15,6 +19,7 @@ function toggleSidebar() {
 function switchCategory(cat) {
     currentCategory = cat;
     mode = 'all';
+    displayCount = 60; // Reset pagination
     
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active-nav', btn.dataset.cat === cat);
@@ -27,7 +32,7 @@ function switchCategory(cat) {
     
     if (cat === 'mj') handlePortalOpen('https://eduvibe-mj.pages.dev/');
     else if (cat === 'nt') handlePortalOpen('https://eduvibe-nt.pages.dev/');
-    else renderGrid();
+    else renderGrid(true);
 }
 
 // --- PORTAL (SMART HISTORY REDIRECT) ---
@@ -40,7 +45,6 @@ function handlePortalOpen(url) {
     frame.src = url;
     portal.classList.add('active');
     
-    // Show Community Popup on first entry
     if (!localStorage.getItem('joined_community')) {
         setTimeout(showJoinPopup, 3000);
     }
@@ -98,15 +102,15 @@ function joinCommunity() {
     closeJoinPopup();
 }
 
-// --- RENDERING ---
-function renderGrid() {
+// --- RENDERING & INFINITE SCROLL ---
+function renderGrid(resetScroll = false) {
     const grid = document.getElementById('gridContainer');
     const mainScroll = document.getElementById('mainScroll');
     
     if (currentCategory !== 'pw') return;
-    mainScroll.scrollTo(0, 0);
+    if (resetScroll) mainScroll.scrollTo(0, 0);
 
-    let list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, 100);
+    let list = mode === 'fav' ? allBatches.filter(b => favorites.includes(b._id || b.batch_id)) : allBatches.slice(0, displayCount);
     
     if (list.length === 0 && mode === 'fav') {
         grid.innerHTML = `<div class="col-span-full text-center py-40 opacity-40 font-black uppercase text-xs tracking-widest">No Favorites Yet</div>`;
@@ -134,6 +138,18 @@ function renderGrid() {
         `;
     }).join('');
 }
+
+// Global Scroll Listener for Infinite Scroll
+document.getElementById('mainScroll').onscroll = (e) => {
+    if (mode === 'fav' || currentCategory !== 'pw') return;
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollTop + clientHeight >= scrollHeight - 800) {
+        if (displayCount < allBatches.length) {
+            displayCount += LOAD_STEP;
+            renderGrid(false);
+        }
+    }
+};
 
 function toggleFav(id) {
     if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
@@ -164,14 +180,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch('batches.json');
         const data = await res.json();
         allBatches = data.batches;
-        renderGrid();
+        renderGrid(true);
     } catch (e) { console.error("Init Error"); }
     
     document.getElementById('searchInput').oninput = handleSearch;
     document.getElementById('heartBtn').onclick = () => {
         mode = mode === 'all' ? 'fav' : 'all';
         document.getElementById('heartBtn').classList.toggle('text-red-500', mode === 'fav');
-        renderGrid();
+        renderGrid(true);
     };
 
     window.addEventListener('popstate', (event) => {
