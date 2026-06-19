@@ -1,14 +1,27 @@
+const CONFIG = {
+    PROXY: "https://rahul-study-bot.dev-rahulmaida.workers.dev"
+};
 
 let allBatches = [];
 let favorites = JSON.parse(localStorage.getItem('fav-batches') || '[]');
 let currentCategory = 'pw'; 
 let mode = 'all'; 
 
-// Pagination State
 let displayCount = 60;
 const LOAD_STEP = 40;
 
 const FALLBACK_LOGO = "https://i.ibb.co/RTvsC93K/bannerimage-Rahul-maida.jpg";
+
+// --- TOKEN PROXY FIX ---
+async function getFreshToken() {
+    try {
+        const res = await fetch(`${CONFIG.PROXY}/token`);
+        const data = await res.json();
+        return data.token;
+    } catch(e) { 
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NH0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8"; 
+    }
+}
 
 // --- NAVIGATION & SIDEBAR ---
 function toggleSidebar() {
@@ -40,21 +53,35 @@ function switchCategory(cat, skipHash = false) {
     }
 }
 
-// --- PORTAL (SMART HISTORY & REFRESH PERSISTENCE) ---
-function handlePortalOpen(url, isDirectPlatform = false, hashData = null) {
+// --- UNIVERSAL ROUTING (DEEP LINKS & PERSISTENCE) ---
+function updateParentUrl(path, queryParams) {
+    const newUrl = `${window.location.origin}${path}${queryParams}`;
+    window.history.pushState({ portalOpen: true }, '', newUrl);
+}
+
+function handlePortalOpen(url, isDirectPlatform = false, skipPush = false) {
     const portal = document.getElementById('iframePortal');
     const frame = document.getElementById('portalFrame');
     
-    if (!hashData) {
-        history.pushState({ portalOpen: true }, '');
+    if (!skipPush && !isDirectPlatform) {
+        window.history.pushState({ portalOpen: true }, '', window.location.href);
     }
     
-    frame.src = url;
+    // THE HACKER BYPASS: If this is a page refresh, the browser NATIVELY remembers the deepest
+    // cross-origin iframe URL and restores it automatically. If we set frame.src here, we destroy it.
+    let isReload = false;
+    try {
+        const navs = performance.getEntriesByType("navigation");
+        if (navs.length > 0 && navs[0].type === "reload") isReload = true;
+    } catch(e) {}
+    
+    // Only set src if it's NOT a reload.
+    // This allows F5 to keep the user perfectly in the deep video/subject page!
+    if (!isReload) {
+        frame.src = url;
+    }
+    
     portal.classList.add('active');
-    
-    if (!localStorage.getItem('joined_community')) {
-        setTimeout(showJoinPopup, 4000);
-    }
 }
 
 function forceClosePortal() {
@@ -62,12 +89,9 @@ function forceClosePortal() {
     const frame = document.getElementById('portalFrame');
     frame.src = 'about:blank';
     portal.classList.remove('active');
-    closeJoinPopup();
     
-    if (window.location.hash.includes('batch/')) {
-        window.location.hash = currentCategory;
-    }
-    
+    // Go back to root on close
+    window.history.pushState({}, '', '/');
     if (currentCategory !== 'pw') switchCategory('pw');
 }
 
@@ -76,86 +100,44 @@ function closePortal(internal = false) {
     const frame = document.getElementById('portalFrame');
     frame.src = 'about:blank';
     portal.classList.remove('active');
-    if (!internal) window.location.hash = currentCategory;
+    if (!internal) window.history.pushState({}, '', '/');
 }
 
 function handleSmartBack() {
     window.history.back();
 }
 
-function handleBatchClick(id, name) {
+async function handleBatchClick(id, name) {
     const bName = encodeURIComponent(name).replace(/%20/g, '+');
-    // RESTORED RARESTUDY PER USER REQUEST
-    const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
+    const path = '/subjects';
+    const query = `?batchId=${id}&batchName=${bName}`;
+    const url = `https://rarestudy.in${path}${query}`;
     
-    window.location.hash = `pw/batch/${id}/${bName}`;
-    handlePortalOpen(url);
+    updateParentUrl(path, query);
+    handlePortalOpen(url, false, true);
 }
 
-// --- HASH ROUTING LOGIC (REFRESH PERSISTENCE) ---
-function loadStateFromHash() {
-    const hash = window.location.hash.replace('#', '');
-    if (!hash) {
-        switchCategory('pw', true);
+// Read deep links on load (e.g. /stream?batchId=...)
+async function loadStateFromUrl() {
+    const path = window.location.pathname;
+    const search = window.location.search;
+    
+    // If it's a known deepest link path, proxy it directly to rarestudy
+    if (path.includes('/subjects') || path.includes('/content') || path.includes('/stream') || path.includes('/videos')) {
+        const url = `https://rarestudy.in${path}${search}`;
+        currentCategory = 'pw';
+        handlePortalOpen(url, false, true);
         return;
     }
 
-    if (hash.startsWith('pw/batch/')) {
-        const parts = hash.split('/');
-        const id = parts[2];
-        const bName = parts[3];
-        const url = `https://rarestudy.in/subjects?batchId=${id}&batchName=${bName}`;
-        currentCategory = 'pw';
-        handlePortalOpen(url, false, true);
-    } else if (hash === 'mj') {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'mj') {
         switchCategory('mj', true);
     } else if (hash === 'nt') {
         switchCategory('nt', true);
     } else {
         switchCategory('pw', true);
     }
-}
-
-// --- POPUP SYSTEM ---
-function showJoinPopup() {
-    if (document.getElementById('communityPopup') || currentCategory !== 'pw') return;
-    const popup = document.createElement('div');
-    popup.id = 'communityPopup';
-    popup.className = "fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300";
-    popup.innerHTML = `
-        <div class="bg-[#111114] border border-white/10 rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-500">
-            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.185-.573c.948.527 1.927.817 3.141.817 3.181 0 5.767-2.587 5.768-5.766 0-3.181-2.587-5.768-5.766-5.768zm3.391 8.247c-.146.415-.852.797-1.157.846-.305.048-.682.08-2.116-.512-1.71-.713-2.807-2.448-2.891-2.56-.085-.113-.691-.921-.691-1.756 0-.835.439-1.246.596-1.411.158-.165.341-.205.454-.205s.227 0 .326.005c.106.005.25.039.39.39.141.35.484 1.179.527 1.265.042.085.07.184.013.298-.057.113-.085.184-.171.283-.085.1-.184.223-.263.303-.095.094-.194.195-.084.364.111.168.49 1.103.733 1.341.312.304.577.34.733.415.158.077.25.066.341-.039.091-.106.39-.454.496-.61.106-.156.213-.131.36-.073.146.057.927.437 1.086.516.159.079.265.118.305.186.04.068.04.394-.106.809z"/></svg>
-            </div>
-            <h3 class="text-xl font-black text-white mb-2 italic uppercase tracking-tighter">Join Community</h3>
-            <p class="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-8 leading-loose">Get latest batch updates & premium support instantly</p>
-            <div class="space-y-3">
-                <button onclick="joinCommunity()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-600/20 transition-all">Join Now</button>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="mutePopup24h()" class="py-3 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all">Mute 24h</button>
-                    <button onclick="closeJoinPopup()" class="py-3 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all">Later</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(popup);
-}
-
-function closeJoinPopup() {
-    const el = document.getElementById('communityPopup');
-    if (el) el.remove();
-}
-
-function joinCommunity() {
-    window.open("https://whatsapp.com/channel/0029Vb86VfU8V0tmM9KqqT2c", "_blank");
-    localStorage.setItem('joined_community', 'true');
-    closeJoinPopup();
-}
-
-function mutePopup24h() {
-    const tomorrow = Date.now() + (24 * 60 * 60 * 1000);
-    localStorage.setItem('popup_muted_until', tomorrow.toString());
-    closeJoinPopup();
 }
 
 // --- RENDERING ---
@@ -179,7 +161,7 @@ function renderGrid(resetScroll = false) {
         const img = b.previewImage || FALLBACK_LOGO;
         
         return `
-            <div class="premium-card group" onclick="handleBatchClick('${id}', '${b.name.replace(/'/g,"")}')">
+            <div class="premium-card group" onclick="handleBatchClick('${id}', '${b.name.replace(/'/g,"\\'")}')">
                 <div class="card-thumb">
                     <img src="${img}" onerror="this.src='${FALLBACK_LOGO}'" loading="lazy">
                     <button onclick="event.stopPropagation(); toggleFav('${id}')" class="absolute top-3 right-3 z-10 p-2.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-${isFav ? 'yellow-400' : 'gray-400'} active:scale-90 transition-all">
@@ -216,30 +198,28 @@ function toggleFav(id) {
 function openSearch() { document.getElementById('searchModal').classList.add('active'); document.getElementById('searchInput').focus(); }
 function closeSearch() { document.getElementById('searchModal').classList.remove('active'); }
 
-function handleSearch() {
+document.getElementById('searchInput').oninput = () => {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const resEl = document.getElementById('searchResults');
     if (!q) { resEl.innerHTML = ''; return; }
     
     const matches = allBatches.filter(b => b.name.toLowerCase().includes(q)).slice(0, 15);
     resEl.innerHTML = matches.map(b => `
-        <div onclick="closeSearch(); handleBatchClick('${b._id || b.batch_id}', '${b.name.replace(/'/g,"")}')" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer">
+        <div onclick="closeSearch(); handleBatchClick('${b._id || b.batch_id}', '${b.name.replace(/'/g,"\\'")}')" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer">
             <img src="${b.previewImage || FALLBACK_LOGO}" class="w-10 h-10 rounded-lg object-cover">
             <div class="text-xs font-black uppercase text-white">${b.name}</div>
         </div>
     `).join('');
-}
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch('batches.json');
+        const res = await fetch('/batches.json');
         const data = await res.json();
         allBatches = data.batches;
-        loadStateFromHash();
-        checkAndShowPopup();
+        loadStateFromUrl();
     } catch (e) { console.error("Init Error"); }
     
-    document.getElementById('searchInput').oninput = handleSearch;
     document.getElementById('heartBtn').onclick = () => {
         mode = mode === 'all' ? 'fav' : 'all';
         document.getElementById('heartBtn').classList.toggle('text-red-500', mode === 'fav');
@@ -247,6 +227,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.addEventListener('popstate', (event) => {
+        const path = window.location.pathname;
+        // If the URL naturally implies the portal should be open, DO NOT force close it.
+        // This fixes the bug where mobile browsers firing popstate on load throw users back to the main page.
+        if (path.includes('/subjects') || path.includes('/content') || path.includes('/stream') || path.includes('/videos')) {
+            return;
+        }
         if (!event.state || !event.state.portalOpen) forceClosePortal();
+    });
+
+    // Attempt to sync URL if the iframe broadcasts its navigation state (Bonus feature)
+    window.addEventListener('message', (event) => {
+        if (event.origin.includes('rarestudy') && event.data) {
+            try {
+                let currentPath = '';
+                if (typeof event.data === 'string' && event.data.startsWith('http')) {
+                    currentPath = event.data;
+                } else if (event.data.url) {
+                    currentPath = event.data.url;
+                }
+                
+                if (currentPath) {
+                    const url = new URL(currentPath);
+                    updateParentUrl(url.pathname, url.search);
+                }
+            } catch(e) {}
+        }
     });
 });
